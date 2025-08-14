@@ -1,11 +1,10 @@
 --!strict  
 --[[  
-	A LocalScript to create four beautiful, draggable, and dynamic UI menus.  
+	A LocalScript to create four cool, modern, draggable, and dynamic UI menus.  
 	This script is designed to be placed in StarterPlayerScripts.  
 	  
-	This version has been optimized for better performance and  
-	addresses the issue of tracers being too big and invisible through objects.  
-	It also includes a new "Farm Level" menu.  
+	This version has been completely redesigned with a "glassmorphism" aesthetic,  
+	featuring frosted transparency, soft shadows, and more vibrant colors.  
 ]]  
 
 -- SERVICES  
@@ -18,21 +17,23 @@ local RunService = game:GetService("RunService")
 
 -- CONFIGURATION  
 local UI_SIZE = UDim2.new(0, 300, 0, 400)  
-local MINIMIZED_SIZE = UDim2.new(0, 300, 0, 40)  
+local MINIMIZED_SIZE = UDim2.new(0, 300, 0, 45)  
 local TITLE_FONT = Enum.Font.SourceSansBold  
-local HEADER_COLOR = Color3.fromRGB(30, 30, 30)  
-local PRIMARY_COLOR = Color3.fromRGB(45, 45, 45)  
-local ACCENT_COLOR = Color3.fromRGB(0, 170, 255)  
-local NPC_ACCENT_COLOR = Color3.fromRGB(0, 85, 255)  
-local TEXT_COLOR = Color3.fromRGB(255, 255, 255)  
-local SECONDARY_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)  
-local PLAYER_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)  
-local FARM_ACCENT_COLOR = Color3.fromRGB(0, 255, 0) -- New green color for the farm menu
+local FONT_COLOR = Color3.fromRGB(255, 255, 255)  
+local FROSTED_BACKGROUND = Color3.fromRGB(25, 25, 25)  
+local BORDER_COLOR = Color3.fromRGB(60, 60, 60)  
+local SHADOW_COLOR = Color3.fromRGB(0, 0, 0)  
+
+-- ACCENT COLORS FOR EACH MENU  
+local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red  
+local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green  
+local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan (New color)
+local OTHER_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange  
+  
 local NPC_ESP_DISTANCE = 500  
--- NEW CONFIGURATION FOR TRACERS  
-local TRACER_COLOR = Color3.fromRGB(255, 170, 0)  
-local TRACER_THICKNESS = 0.2 -- Adjusted for a smaller size  
-local TRACER_TRANSPARENCY = 0.2 -- Changed to make the tracers more visible  
+local TRACER_COLOR = OTHER_ACCENT  
+local TRACER_THICKNESS = 0.2  
+local TRACER_TRANSPARENCY = 0.2  
 
 -- Get the player's PlayerGui to store the UI  
 local player = Players.LocalPlayer  
@@ -45,153 +46,250 @@ local TracerContainer = Instance.new("Folder")
 TracerContainer.Name = "TracerContainer"  
 TracerContainer.Parent = Workspace  
 
--- =================================================================  
--- === Boss Status Menu (Menu 1) ===================================  
--- =================================================================  
+-- Reusable function to create UI frames with the new style  
+local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance, color: Color3, isMinimized: boolean?)  
+	local frame = Instance.new("Frame")  
+	frame.Name = "MainFrame"  
+	frame.Size = if isMinimized then MINIMIZED_SIZE else size  
+	frame.Position = position  
+	frame.BackgroundColor3 = FROSTED_BACKGROUND  
+	frame.BackgroundTransparency = 0.25  
+	frame.BorderSizePixel = 0  
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)  
+	frame.ClipsDescendants = not isMinimized or false  
+	frame.Parent = parent  
 
--- SETUP UI ELEMENTS FOR MENU 1  
-local screenGui1 = Instance.new("ScreenGui")  
-screenGui1.Name = "SawBossMenu"  
-screenGui1.ResetOnSpawn = false  
-screenGui1.Parent = PlayerGui  
+	local corner = Instance.new("UICorner")  
+	corner.CornerRadius = UDim.new(0, 12)  
+	corner.Parent = frame  
 
-local mainFrame1 = Instance.new("Frame")  
-mainFrame1.Name = "MainFrame"  
-mainFrame1.Size = UI_SIZE  
-mainFrame1.Position = UDim2.new(0.5, -150, 0.5, -100)  
-mainFrame1.BackgroundColor3 = PRIMARY_COLOR  
-mainFrame1.BorderSizePixel = 0  
-mainFrame1.AnchorPoint = Vector2.new(0.5, 0.5)  
-mainFrame1.ClipsDescendants = true  
-mainFrame1.Parent = screenGui1  
+	local stroke = Instance.new("UIStroke")  
+	stroke.Color = BORDER_COLOR  
+	stroke.Thickness = 1.5  
+	stroke.Transparency = 0.5  
+	stroke.Parent = frame  
 
-local corner1 = Instance.new("UICorner")  
-corner1.CornerRadius = UDim.new(0, 8)  
-corner1.Parent = mainFrame1  
+	local shadow = Instance.new("UIStroke")  
+	shadow.Name = "ShadowStroke"  
+	shadow.Color = SHADOW_COLOR  
+	shadow.Thickness = 2  
+	shadow.Transparency = 0.7  
+	shadow.Parent = frame  
 
-local stroke1 = Instance.new("UIStroke")  
-stroke1.Color = Color3.fromRGB(60, 60, 60)  
-stroke1.Thickness = 1.5  
-stroke1.Parent = mainFrame1  
+	local layout = Instance.new("UIListLayout")  
+	layout.Padding = UDim.new(0, 10)  
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center  
+	layout.SortOrder = Enum.SortOrder.LayoutOrder  
+	layout.Parent = frame  
 
-local gradient1 = Instance.new("UIGradient")  
-gradient1.Color = ColorSequence.new(  
-	Color3.fromRGB(60, 60, 60),  
-	Color3.fromRGB(45, 45, 45)  
-)  
-gradient1.Rotation = 90  
-gradient1.Parent = mainFrame1  
+	return frame, corner, stroke  
+end  
 
-local titleBar1 = Instance.new("Frame")  
-titleBar1.Name = "TitleBar"  
-titleBar1.Size = UDim2.new(1, 0, 0, 40)  
-titleBar1.BackgroundColor3 = HEADER_COLOR  
-titleBar1.BorderSizePixel = 0  
-titleBar1.Parent = mainFrame1  
+-- Reusable function for the title bar with buttons  
+local function createTitleBar(parent: Instance, title: string, accentColor: Color3)  
+	local titleBar = Instance.new("Frame")  
+	titleBar.Name = "TitleBar"  
+	titleBar.Size = UDim2.new(1, 0, 0, 45)  
+	titleBar.BackgroundColor3 = FROSTED_BACKGROUND  
+	titleBar.BackgroundTransparency = 0.1  
+	titleBar.BorderSizePixel = 0  
+	titleBar.Parent = parent  
 
-local titleBarCorner1 = Instance.new("UICorner")  
-titleBarCorner1.CornerRadius = UDim.new(0, 8)  
-titleBarCorner1.Parent = titleBar1  
+	local corner = Instance.new("UICorner")  
+	corner.CornerRadius = UDim.new(0, 10)  
+	corner.Parent = titleBar  
 
-local titleLabel1 = Instance.new("TextLabel")  
-titleLabel1.Name = "StatusLabel"  
-titleLabel1.Size = UDim2.new(1, -70, 1, 0)  
-titleLabel1.Position = UDim2.new(0, 5, 0, 0)  
-titleLabel1.BackgroundTransparency = 1  
-titleLabel1.TextColor3 = TEXT_COLOR  
-titleLabel1.TextScaled = true  
-titleLabel1.Font = TITLE_FONT  
-titleLabel1.Text = "Checking for bosses..."  
-titleLabel1.TextXAlignment = Enum.TextXAlignment.Left  
-titleLabel1.Parent = titleBar1  
+	local gradient = Instance.new("UIGradient")  
+	gradient.Color = ColorSequence.new(accentColor, accentColor:Lerp(Color3.new(0,0,0), 0.5))  
+	gradient.Rotation = 90  
+	gradient.Parent = titleBar  
 
-local minimizeButton1 = Instance.new("TextButton")  
-minimizeButton1.Name = "MinimizeButton"  
-minimizeButton1.Size = UDim2.new(0, 30, 1, -5)  
-minimizeButton1.Position = UDim2.new(1, -65, 0, 2)  
-minimizeButton1.BackgroundColor3 = PRIMARY_COLOR  
-minimizeButton1.BorderSizePixel = 0  
-minimizeButton1.Text = "-"  
-minimizeButton1.TextColor3 = TEXT_COLOR  
-minimizeButton1.TextSize = 25  
-minimizeButton1.Font = TITLE_FONT  
-minimizeButton1.Parent = titleBar1  
+	local titleLabel = Instance.new("TextLabel")  
+	titleLabel.Name = "TitleLabel"  
+	titleLabel.Size = UDim2.new(1, -70, 1, 0)  
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)  
+	titleLabel.BackgroundTransparency = 1  
+	titleLabel.TextColor3 = FONT_COLOR  
+	titleLabel.TextScaled = true  
+	titleLabel.Font = TITLE_FONT  
+	titleLabel.Text = title  
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left  
+	titleLabel.TextYAlignment = Enum.TextYAlignment.Center  
+	titleLabel.Parent = titleBar  
 
-local nukeButton1 = Instance.new("TextButton")  
-nukeButton1.Name = "NukeButton"  
-nukeButton1.Size = UDim2.new(0, 30, 1, -5)  
-nukeButton1.Position = UDim2.new(1, -32, 0, 2)  
-nukeButton1.BackgroundColor3 = Color3.fromRGB(255, 50, 50)  
-nukeButton1.BorderSizePixel = 0  
-nukeButton1.Text = "X"  
-nukeButton1.TextColor3 = TEXT_COLOR  
-nukeButton1.TextSize = 20  
-nukeButton1.Font = TITLE_FONT  
-nukeButton1.Parent = titleBar1  
+	local minimizeButton = Instance.new("TextButton")  
+	minimizeButton.Name = "MinimizeButton"  
+	minimizeButton.Size = UDim2.new(0, 30, 1, -15)  
+	minimizeButton.Position = UDim2.new(1, -75, 0, 8)  
+	minimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
+	minimizeButton.BorderSizePixel = 0  
+	minimizeButton.Text = "-"  
+	minimizeButton.TextColor3 = FONT_COLOR  
+	minimizeButton.TextSize = 25  
+	minimizeButton.Font = TITLE_FONT  
+	minimizeButton.Parent = titleBar  
+	
+	local minCorner = Instance.new("UICorner")
+	minCorner.CornerRadius = UDim.new(0, 8)
+	minCorner.Parent = minimizeButton
 
--- DRAGGING FUNCTIONALITY FOR MENU 1  
-local isDragging1 = false  
-local dragStartPos1 = Vector2.new(0, 0)  
-local dragStartFramePosition1 = UDim2.new(0, 0, 0, 0)  
+	local nukeButton = Instance.new("TextButton")  
+	nukeButton.Name = "NukeButton"  
+	nukeButton.Size = UDim2.new(0, 30, 1, -15)  
+	nukeButton.Position = UDim2.new(1, -40, 0, 8)  
+	nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5)  
+	nukeButton.BorderSizePixel = 0  
+	nukeButton.Text = "X"  
+	nukeButton.TextColor3 = FONT_COLOR  
+	nukeButton.TextSize = 20  
+	nukeButton.Font = TITLE_FONT  
+	nukeButton.Parent = titleBar
+	
+	local nukeCorner = Instance.new("UICorner")
+	nukeCorner.CornerRadius = UDim.new(0, 8)
+	nukeCorner.Parent = nukeButton
+	
+	-- Hover effects  
+	minimizeButton.MouseEnter:Connect(function()  minimizeButton.BackgroundColor3 = accentColor end)  
+	minimizeButton.MouseLeave:Connect(function()  minimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end)  
+	nukeButton.MouseEnter:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT end)  
+	nukeButton.MouseLeave:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5) end)  
 
-titleBar1.InputBegan:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging1 = true  
-		dragStartPos1 = input.Position  
-		dragStartFramePosition1 = mainFrame1.Position  
-		UserInputService.MouseIconEnabled = false  
-	end  
-end)  
+	return titleBar, minimizeButton, nukeButton  
+end  
+
+-- Reusable function for a toggle button  
+local function createToggleButton(parent: Instance, text: string, accentColor: Color3, initialActiveState: boolean)  
+	local container = Instance.new("Frame")
+	container.Name = "ToggleContainer"
+	container.Size = UDim2.new(1, 0, 0, 40)
+	container.BackgroundColor3 = FROSTED_BACKGROUND
+	container.BackgroundTransparency = 0.5
+	container.BorderSizePixel = 0
+	container.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = container
+
+	local button = Instance.new("TextButton")
+	button.Name = "ToggleButton"
+	button.Size = UDim2.new(1, 0, 1, 0)
+	button.BackgroundTransparency = 1
+	button.Text = ""
+	button.Parent = container
+
+	local toggleBox = Instance.new("Frame")
+	toggleBox.Name = "ToggleBox"
+	toggleBox.Size = UDim2.new(0, 20, 0, 20)
+	toggleBox.Position = UDim2.new(0, 10, 0.5, -10)
+	toggleBox.BackgroundColor3 = if initialActiveState then accentColor else Color3.fromRGB(80, 80, 80)
+	toggleBox.BorderSizePixel = 1
+	toggleBox.BorderColor3 = BORDER_COLOR
+	toggleBox.Parent = button
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 5)
+	boxCorner.Parent = toggleBox
+
+	local checkmark = Instance.new("ImageLabel")
+	checkmark.Name = "Checkmark"
+	checkmark.BackgroundTransparency = 1
+	checkmark.Size = UDim2.new(1, 0, 1, 0)
+	checkmark.Image = "rbxassetid://603417770"
+	checkmark.ImageColor3 = FONT_COLOR
+	checkmark.Visible = initialActiveState
+	checkmark.Parent = toggleBox
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.Size = UDim2.new(1, -40, 1, 0)
+	label.Position = UDim2.new(0, 35, 0, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = FONT_COLOR
+	label.Text = text
+	label.TextScaled = true
+	label.Font = TITLE_FONT
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = button
+
+	return button, checkmark, toggleBox
+end  
+
+-- DRAGGING FUNCTIONALITY  
+local isDragging = false  
+local dragStartPos = Vector2.new(0, 0)  
+local dragStartFramePosition = UDim2.new(0, 0, 0, 0)  
+local activeFrame = nil  
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)  
+
+local function setupDrag(frame: Frame, titleBar: Frame)  
+	titleBar.InputBegan:Connect(function(input)  
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
+			isDragging = true  
+			dragStartPos = input.Position  
+			dragStartFramePosition = frame.Position  
+			activeFrame = frame  
+			UserInputService.MouseIconEnabled = false  
+		end  
+	end)  
+end  
 
 UserInputService.InputEnded:Connect(function(input)  
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging1 = false  
+		isDragging = false  
+		activeFrame = nil  
 		UserInputService.MouseIconEnabled = true  
 	end  
 end)  
 
 UserInputService.InputChanged:Connect(function(input)  
-	if isDragging1 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
-		local delta = input.Position - dragStartPos1  
-		local newPosition = dragStartFramePosition1 + UDim2.new(0, delta.X, 0, delta.Y)  
-		mainFrame1.Position = newPosition  
+	if isDragging and activeFrame and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
+		local delta = input.Position - dragStartPos  
+		local newPosition = dragStartFramePosition + UDim2.new(0, delta.X, 0, delta.Y)  
+		activeFrame.Position = newPosition  
 	end  
 end)  
 
--- BUTTON FUNCTIONALITY FOR MENU 1  
-local isMinimized1 = false  
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)  
+-- =================================================================  
+-- === Menu 1: Boss Status =========================================  
+-- =================================================================  
 
+local screenGui1 = Instance.new("ScreenGui")  
+screenGui1.Name = "BossStatusMenu"  
+screenGui1.ResetOnSpawn = false  
+screenGui1.Parent = PlayerGui  
+
+local mainFrame1, corner1, stroke1 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, -100), screenGui1, FROSTED_BACKGROUND, false)  
+local titleBar1, minimizeButton1, nukeButton1 = createTitleBar(mainFrame1, "Boss Status", BOSS_ACCENT)  
+setupDrag(mainFrame1, titleBar1)  
+
+local isMinimized1 = false  
 minimizeButton1.MouseButton1Click:Connect(function()  
 	isMinimized1 = not isMinimized1  
-
-	local targetSize  
-	if isMinimized1 then  
-		targetSize = MINIMIZED_SIZE  
-	else  
-		targetSize = UI_SIZE  
-	end  
+	local targetSize = if isMinimized1 then MINIMIZED_SIZE else UI_SIZE  
 	local targetClipsDescendants = not isMinimized1  
-
-	local tween = TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize})  
-	tween:Play()  
-
-	task.delay(0.2, function()  
-		mainFrame1.ClipsDescendants = targetClipsDescendants  
-	end)  
-
-	if isMinimized1 then  
-		minimizeButton1.Text = "+"  
-	else  
-		minimizeButton1.Text = "-"  
-	end  
+	TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize}):Play()  
+	task.delay(0.2, function() mainFrame1.ClipsDescendants = targetClipsDescendants end)  
+	minimizeButton1.Text = if isMinimized1 then "+" else "-"  
 end)  
 
--- DYNAMIC STATUS CHECK FOR MENU 1  
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.LayoutOrder = 1
+statusLabel.Size = UDim2.new(1, -20, 0, 50)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = FONT_COLOR
+statusLabel.TextScaled = true
+statusLabel.Font = TITLE_FONT
+statusLabel.Text = "Checking for bosses..."
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+statusLabel.Parent = mainFrame1
+	
+-- DYNAMIC STATUS CHECK  
 local enemiesFolder = Workspace:FindFirstChild("Enemies")  
-
 if not enemiesFolder then  
-	titleLabel1.Text = "No enemies folder found!"  
+	statusLabel.Text = "No enemies folder found!"  
 end  
 
 task.spawn(function()  
@@ -200,194 +298,67 @@ task.spawn(function()
 		if enemiesFolder then  
 			local sawBoss = enemiesFolder:FindFirstChild("Saw")  
 			if sawBoss and sawBoss:IsA("Model") then  
-				titleLabel1.Text = "Bosses spawned!"  
+				statusLabel.Text = "Bosses spawned!"  
+				statusLabel.TextColor3 = BOSS_ACCENT
 			else  
-				titleLabel1.Text = "No bosses spawned"  
+				statusLabel.Text = "No bosses spawned"  
+				statusLabel.TextColor3 = FONT_COLOR
 			end  
 		end  
 	end  
 end)  
 
 -- =================================================================  
--- === Player & NPC ESP Menu (Menu 2) ==============================  
+-- === Menu 2: Player & NPC ESP ====================================  
 -- =================================================================  
 
--- SETUP UI ELEMENTS FOR MENU 2  
 local screenGui2 = Instance.new("ScreenGui")  
 screenGui2.Name = "PlayerESPMenu"  
 screenGui2.ResetOnSpawn = false  
 screenGui2.Parent = PlayerGui  
 
-local mainFrame2 = Instance.new("Frame")  
-mainFrame2.Name = "MainFrame"  
-mainFrame2.Size = UI_SIZE  
-mainFrame2.Position = UDim2.new(0.5, -150, 0.5, 100)  
-mainFrame2.BackgroundColor3 = PRIMARY_COLOR  
-mainFrame2.BorderSizePixel = 0  
-mainFrame2.AnchorPoint = Vector2.new(0.5, 0.5)  
-mainFrame2.ClipsDescendants = true  
-mainFrame2.Parent = screenGui2  
+local mainFrame2, corner2, stroke2 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, 100), screenGui2, FROSTED_BACKGROUND, false)  
+local titleBar2, minimizeButton2, nukeButton2 = createTitleBar(mainFrame2, "Player & NPC ESP", ESP_ACCENT)  
+setupDrag(mainFrame2, titleBar2)  
 
-local corner2 = Instance.new("UICorner")  
-corner2.CornerRadius = UDim.new(0, 8)  
-corner2.Parent = mainFrame2  
-
-local stroke2 = Instance.new("UIStroke")  
-stroke2.Color = Color3.fromRGB(60, 60, 60)  
-stroke2.Thickness = 1.5  
-stroke2.Parent = mainFrame2  
-
-local gradient2 = Instance.new("UIGradient")  
-gradient2.Color = ColorSequence.new(  
-	Color3.fromRGB(60, 60, 60),  
-	Color3.fromRGB(45, 45, 45)  
-)  
-gradient2.Rotation = 90  
-gradient2.Parent = mainFrame2  
-
-local titleBar2 = Instance.new("Frame")  
-titleBar2.Name = "TitleBar"  
-titleBar2.Size = UDim2.new(1, 0, 0, 40)  
-titleBar2.BackgroundColor3 = HEADER_COLOR  
-titleBar2.BorderSizePixel = 0  
-titleBar2.Parent = mainFrame2  
-
-local titleBarCorner2 = Instance.new("UICorner")  
-titleBarCorner2.CornerRadius = UDim.new(0, 8)  
-titleBarCorner2.Parent = titleBar2  
-
-local titleLabel2 = Instance.new("TextLabel")  
-titleLabel2.Name = "TitleLabel"  
-titleLabel2.Size = UDim2.new(1, -70, 1, 0)  
-titleLabel2.Position = UDim2.new(0, 5, 0, 0)  
-titleLabel2.BackgroundTransparency = 1  
-titleLabel2.TextColor3 = SECONDARY_ACCENT_COLOR  
-titleLabel2.TextScaled = true  
-titleLabel2.Font = TITLE_FONT  
-titleLabel2.Text = "Player & NPC ESP Menu"  
-titleLabel2.TextXAlignment = Enum.TextXAlignment.Left  
-titleLabel2.Parent = titleBar2  
-
-local minimizeButton2 = Instance.new("TextButton")  
-minimizeButton2.Name = "MinimizeButton"  
-minimizeButton2.Size = UDim2.new(0, 30, 1, -5)  
-minimizeButton2.Position = UDim2.new(1, -65, 0, 2)  
-minimizeButton2.BackgroundColor3 = PRIMARY_COLOR  
-minimizeButton2.BorderSizePixel = 0  
-minimizeButton2.Text = "-"  
-minimizeButton2.TextColor3 = TEXT_COLOR  
-minimizeButton2.TextSize = 25  
-minimizeButton2.Font = TITLE_FONT  
-minimizeButton2.Parent = titleBar2  
-
-local nukeButton2 = Instance.new("TextButton")  
-nukeButton2.Name = "NukeButton"  
-nukeButton2.Size = UDim2.new(0, 30, 1, -5)  
-nukeButton2.Position = UDim2.new(1, -32, 0, 2)  
-nukeButton2.BackgroundColor3 = Color3.fromRGB(255, 50, 50)  
-nukeButton2.BorderSizePixel = 0  
-nukeButton2.Text = "X"  
-nukeButton2.TextColor3 = TEXT_COLOR  
-nukeButton2.TextSize = 20  
-nukeButton2.Font = TITLE_FONT  
-nukeButton2.Parent = titleBar2  
+local isMinimized2 = false  
+minimizeButton2.MouseButton1Click:Connect(function()  
+	isMinimized2 = not isMinimized2  
+	local targetSize = if isMinimized2 then MINIMIZED_SIZE else UI_SIZE  
+	local targetClipsDescendants = not isMinimized2  
+	TweenService:Create(mainFrame2, tweenInfo, {Size = targetSize}):Play()  
+	task.delay(0.2, function() mainFrame2.ClipsDescendants = targetClipsDescendants end)  
+	minimizeButton2.Text = if isMinimized2 then "+" else "-"  
+end)  
 
 -- Player ESP Section  
 local playerEspLabel = Instance.new("TextLabel")  
 playerEspLabel.Name = "PlayerEspLabel"  
+playerEspLabel.LayoutOrder = 2
 playerEspLabel.Text = "Player ESP Options"  
 playerEspLabel.Size = UDim2.new(1, -20, 0, 25)  
-playerEspLabel.Position = UDim2.new(0, 10, 0, 50)  
 playerEspLabel.BackgroundTransparency = 1  
-playerEspLabel.TextColor3 = SECONDARY_ACCENT_COLOR  
+playerEspLabel.TextColor3 = ESP_ACCENT  
 playerEspLabel.TextScaled = true  
 playerEspLabel.Font = TITLE_FONT  
 playerEspLabel.TextXAlignment = Enum.TextXAlignment.Left  
 playerEspLabel.Parent = mainFrame2  
-
-local playerEspButtonsContainer = Instance.new("Frame")  
-playerEspButtonsContainer.Name = "PlayerEspButtonsContainer"  
-playerEspButtonsContainer.Size = UDim2.new(1, -20, 0.35, 0)  
-playerEspButtonsContainer.Position = UDim2.new(0, 10, 0, 80)  
-playerEspButtonsContainer.BackgroundTransparency = 1  
-playerEspButtonsContainer.Parent = mainFrame2  
-
-local playerListLayout = Instance.new("UIListLayout")  
-playerListLayout.Padding = UDim.new(0, 5)  
-playerListLayout.FillDirection = Enum.FillDirection.Vertical  
-playerListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center  
-playerListLayout.Parent = playerEspButtonsContainer  
 
 local playerEspTypes = {  
 	["Username ESP"] = false,  
 	["Distance ESP"] = false,  
 	["Player Tracing"] = false,  
 }  
-
-local playerCheckboxState = {  
-	["Username ESP"] = false,  
-	["Distance ESP"] = false,  
-	["Player Tracing"] = false,  
-}  
+local playerCheckboxState = { ["Username ESP"] = false, ["Distance ESP"] = false, ["Player Tracing"] = false }  
 
 local function createPlayerEspCheckbox(espName)  
-	local button = Instance.new("TextButton")  
-	button.Name = espName .. "Checkbox"  
-	button.Size = UDim2.new(1, 0, 0, 30)  
-	button.BackgroundTransparency = 1  
-	button.BorderSizePixel = 0  
-	button.Text = ""  
-	button.Parent = playerEspButtonsContainer  
-
-	local buttonCorner = Instance.new("UICorner")  
-	buttonCorner.CornerRadius = UDim.new(0, 5)  
-	buttonCorner.Parent = button  
-
-	local checkboxBox = Instance.new("Frame")  
-	checkboxBox.Name = "CheckboxBox"  
-	checkboxBox.Size = UDim2.new(0, 20, 0, 20)  
-	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)  
-	checkboxBox.BackgroundColor3 = PRIMARY_COLOR  
-	checkboxBox.BorderSizePixel = 1  
-	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)  
-	checkboxBox.Parent = button  
-
-	local boxCorner = Instance.new("UICorner")  
-	boxCorner.CornerRadius = UDim.new(0, 5)  
-	boxCorner.Parent = checkboxBox  
-
-	local checkboxIcon = Instance.new("ImageLabel")  
-	checkboxIcon.Name = "Checkmark"  
-	checkboxIcon.BackgroundTransparency = 1  
-	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)  
-	checkboxIcon.Image = "rbxassetid://603417770"  
-	checkboxIcon.ImageColor3 = PLAYER_ACCENT_COLOR  
-	checkboxIcon.Visible = false  
-	checkboxIcon.Parent = checkboxBox  
-
-	local espLabel = Instance.new("TextLabel")  
-	espLabel.Name = "EspNameLabel"  
-	espLabel.Size = UDim2.new(1, -30, 1, 0)  
-	espLabel.Position = UDim2.new(0, 30, 0, 0)  
-	espLabel.BackgroundTransparency = 1  
-	espLabel.TextColor3 = TEXT_COLOR  
-	espLabel.Text = espName  
-	espLabel.TextScaled = true  
-	espLabel.Font = TITLE_FONT  
-	espLabel.TextXAlignment = Enum.TextXAlignment.Left  
-	espLabel.Parent = button  
-
+	local button, checkmark, toggleBox = createToggleButton(mainFrame2, espName, OTHER_ACCENT, false)
+	button.LayoutOrder = 3
 	button.MouseButton1Click:Connect(function()  
 		local newState = not playerCheckboxState[espName]  
 		playerCheckboxState[espName] = newState  
-
-		if newState then  
-			checkboxIcon.Visible = true  
-			checkboxBox.BackgroundColor3 = PLAYER_ACCENT_COLOR  
-		else  
-			checkboxIcon.Visible = false  
-			checkboxBox.BackgroundColor3 = PRIMARY_COLOR  
-		end  
+		checkmark.Visible = newState  
+		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then OTHER_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()  
 	end)  
 end  
 
@@ -398,97 +369,30 @@ end
 -- NPC ESP Section  
 local npcEspLabel = Instance.new("TextLabel")  
 npcEspLabel.Name = "NpcEspLabel"  
+npcEspLabel.LayoutOrder = 4
 npcEspLabel.Text = "NPC ESP Options"  
 npcEspLabel.Size = UDim2.new(1, -20, 0, 25)  
-npcEspLabel.Position = UDim2.new(0, 10, 0, 180)  
 npcEspLabel.BackgroundTransparency = 1  
-npcEspLabel.TextColor3 = ACCENT_COLOR  
+npcEspLabel.TextColor3 = ESP_ACCENT  
 npcEspLabel.TextScaled = true  
 npcEspLabel.Font = TITLE_FONT  
 npcEspLabel.TextXAlignment = Enum.TextXAlignment.Left  
 npcEspLabel.Parent = mainFrame2  
 
-local npcEspButtonsContainer = Instance.new("Frame")  
-npcEspButtonsContainer.Name = "NpcEspButtonsContainer"  
-npcEspButtonsContainer.Size = UDim2.new(1, -20, 0.45, 0)  
-npcEspButtonsContainer.Position = UDim2.new(0, 10, 0, 210)  
-npcEspButtonsContainer.BackgroundTransparency = 1  
-npcEspButtonsContainer.Parent = mainFrame2  
-
-local listLayout = Instance.new("UIListLayout")  
-listLayout.Padding = UDim.new(0, 5)  
-listLayout.FillDirection = Enum.FillDirection.Vertical  
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center  
-listLayout.Parent = npcEspButtonsContainer  
-
 local npcTypes = {  
 	["Set Home Point"] = false,  
 	["Boat Dealer"] = false,  
 }  
-
-local npcCheckboxState = {  
-	["Set Home Point"] = false,  
-	["Boat Dealer"] = false,  
-}  
+local npcCheckboxState = { ["Set Home Point"] = false, ["Boat Dealer"] = false }  
 
 local function createNpcEspCheckbox(npcName)  
-	local button = Instance.new("TextButton")  
-	button.Name = npcName .. "Checkbox"  
-	button.Size = UDim2.new(1, 0, 0, 30)  
-	button.BackgroundTransparency = 1  
-	button.BorderSizePixel = 0  
-	button.Text = ""  
-	button.Parent = npcEspButtonsContainer  
-
-	local buttonCorner = Instance.new("UICorner")  
-	buttonCorner.CornerRadius = UDim.new(0, 5)  
-	buttonCorner.Parent = button  
-
-	local checkboxBox = Instance.new("Frame")  
-	checkboxBox.Name = "CheckboxBox"  
-	checkboxBox.Size = UDim2.new(0, 20, 0, 20)  
-	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)  
-	checkboxBox.BackgroundColor3 = PRIMARY_COLOR  
-	checkboxBox.BorderSizePixel = 1  
-	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)  
-	checkboxBox.Parent = button  
-
-	local boxCorner = Instance.new("UICorner")  
-	boxCorner.CornerRadius = UDim.new(0, 5)  
-	boxCorner.Parent = checkboxBox  
-
-	local checkboxIcon = Instance.new("ImageLabel")  
-	checkboxIcon.Name = "Checkmark"  
-	checkboxIcon.BackgroundTransparency = 1  
-	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)  
-	checkboxIcon.Image = "rbxassetid://603417770"  
-	checkboxIcon.ImageColor3 = ACCENT_COLOR  
-	checkboxIcon.Visible = false  
-	checkboxIcon.Parent = checkboxBox  
-
-	local npcLabel = Instance.new("TextLabel")  
-	npcLabel.Name = "NpcNameLabel"  
-	npcLabel.Size = UDim2.new(1, -30, 1, 0)  
-	npcLabel.Position = UDim2.new(0, 30, 0, 0)  
-	npcLabel.BackgroundTransparency = 1  
-	npcLabel.TextColor3 = TEXT_COLOR  
-	npcLabel.Text = npcName  
-	npcLabel.TextScaled = true  
-	npcLabel.Font = TITLE_FONT  
-	npcLabel.TextXAlignment = Enum.TextXAlignment.Left  
-	npcLabel.Parent = button  
-
+	local button, checkmark, toggleBox = createToggleButton(mainFrame2, npcName, ESP_ACCENT, false)
+	button.LayoutOrder = 5
 	button.MouseButton1Click:Connect(function()  
 		local newState = not npcCheckboxState[npcName]  
 		npcCheckboxState[npcName] = newState  
-
-		if newState then  
-			checkboxIcon.Visible = true  
-			checkboxBox.BackgroundColor3 = NPC_ACCENT_COLOR  
-		else  
-			checkboxIcon.Visible = false  
-			checkboxBox.BackgroundColor3 = PRIMARY_COLOR  
-		end  
+		checkmark.Visible = newState  
+		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then ESP_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()  
 	end)  
 end  
 
@@ -496,83 +400,25 @@ for npcName, _ in pairs(npcTypes) do
 	createNpcEspCheckbox(npcName)  
 end  
 
--- DRAGGING FUNCTIONALITY FOR MENU 2  
-local isDragging2 = false  
-local dragStartPos2 = Vector2.new(0, 0)  
-local dragStartFramePosition2 = UDim2.new(0, 0, 0, 0)  
-
-titleBar2.InputBegan:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging2 = true  
-		dragStartPos2 = input.Position  
-		dragStartFramePosition2 = mainFrame2.Position  
-		UserInputService.MouseIconEnabled = false  
-	end  
-end)  
-
-UserInputService.InputEnded:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging2 = false  
-		UserInputService.MouseIconEnabled = true  
-	end  
-end)  
-
-UserInputService.InputChanged:Connect(function(input)  
-	if isDragging2 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
-		local delta = input.Position - dragStartPos2  
-		local newPosition = dragStartFramePosition2 + UDim2.new(0, delta.X, 0, delta.Y)  
-		mainFrame2.Position = newPosition  
-	end  
-end)  
-
--- BUTTON FUNCTIONALITY FOR MENU 2  
-local isMinimized2 = false  
-minimizeButton2.MouseButton1Click:Connect(function()  
-	isMinimized2 = not isMinimized2  
-
-	local targetSize  
-	if isMinimized2 then  
-		targetSize = MINIMIZED_SIZE  
-	else  
-		targetSize = UI_SIZE  
-	end  
-	local targetClipsDescendants = not isMinimized2  
-
-	local tween = TweenService:Create(mainFrame2, tweenInfo, {Size = targetSize})  
-	tween:Play()  
-
-	task.delay(0.2, function()  
-		mainFrame2.ClipsDescendants = targetClipsDescendants  
-	end)  
-
-	if isMinimized2 then  
-		minimizeButton2.Text = "+"  
-	else  
-		minimizeButton2.Text = "-"  
-	end  
-end)  
-
--- ESP FUNCTIONALITY  
+-- ESP FUNCTIONALITY (UNCHANGED)  
 local playerLabels = {}  
 local npcLabels = {}  
 local playerTracers = {}  
 local npcsFolder = Workspace:WaitForChild("NPCs")  
 
--- PLAYER ESP FUNCTIONS  
 local function createPlayerLabel()  
 	local label = Instance.new("TextLabel")  
 	label.BackgroundTransparency = 1  
 	label.Size = UDim2.new(0, 100, 0, 20)  
-	label.TextColor3 = SECONDARY_ACCENT_COLOR  
+	label.TextColor3 = OTHER_ACCENT  
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)  
-	label.TextStrokeTransparency = 0  
+	label.TextStrokeTransparency = 0.5  
 	label.TextScaled = true  
 	label.Font = Enum.Font.SourceSansBold  
 	label.ZIndex = 10  
 	label.Parent = screenGui2  
 	return label  
 end  
-
 local function createPlayerLabelsForExistingPlayers()  
 	for _, p in ipairs(Players:GetPlayers()) do  
 		if p ~= player and not playerLabels[p] then  
@@ -588,16 +434,13 @@ local function updatePlayerLabels()
 			label.Visible = false  
 			continue  
 		end  
-
 		local rootPart = character.HumanoidRootPart  
 		local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))  
-
 		if onScreen then  
 			local labelText = ""  
 			local labelWidth = 100  
-
 			if playerCheckboxState["Username ESP"] and playerCheckboxState["Distance ESP"] then  
-				labelText = p.Name .. " (" .. tostring(math.floor((rootPart.Position - myRootPart.Position).Magnitude * 0.28 * 10) / 10) .. " meters)"  
+				labelText = p.Name .. " (" .. tostring(math.floor((rootPart.Position - myRootPart.Position).Magnitude * 0.28 * 10) / 10) .. "m)"  
 				labelWidth = 250  
 			elseif playerCheckboxState["Username ESP"] then  
 				labelText = p.Name  
@@ -605,10 +448,9 @@ local function updatePlayerLabels()
 			elseif playerCheckboxState["Distance ESP"] then  
 				local distanceInMeters = (rootPart.Position - myRootPart.Position).Magnitude * 0.28  
 				local formattedDistance = math.floor(distanceInMeters * 10) / 10  
-				labelText = formattedDistance .. " meters"  
+				labelText = formattedDistance .. "m"  
 				labelWidth = 125  
 			end  
-
 			label.Size = UDim2.new(0, labelWidth, 0, 20)  
 			label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)  
 			label.Text = labelText  
@@ -618,80 +460,59 @@ local function updatePlayerLabels()
 		end  
 	end  
 end  
-
 local function removeAllPlayerLabels()  
 	for _, label in pairs(playerLabels) do  
-		if label and label.Parent then  
-			label:Destroy()  
-		end  
+		if label and label.Parent then label:Destroy() end  
 	end  
 	playerLabels = {}  
 end  
-
 local function createPlayerTracer()  
 	local tracer = Instance.new("Part")  
 	tracer.Name = "Tracer"  
 	tracer.Anchored = true  
 	tracer.CanCollide = false  
-	  
-	-- Change Part material to ForceField so it's always visible  
 	tracer.Material = Enum.Material.ForceField  
 	tracer.Transparency = TRACER_TRANSPARENCY  
-	  
 	tracer.Color = TRACER_COLOR  
 	tracer.Size = Vector3.new(1, 1, 1)  
 	tracer.Parent = TracerContainer  
-	  
 	local mesh = Instance.new("CylinderMesh")  
 	mesh.Parent = tracer  
-	  
 	return tracer  
 end  
-
 local function updatePlayerTracer(tracer, targetPart, myRootPart)  
 	if not myRootPart or not targetPart or not targetPart.Parent then  
 		if tracer then tracer:Destroy() end  
 		return  
 	end  
-	  
 	local startPos = myRootPart.Position  
 	local endPos = targetPart.Position  
 	local distance = (startPos - endPos).Magnitude  
 	local middle = startPos:Lerp(endPos, 0.5)  
-
 	local tracerCFrame = CFrame.new(middle, endPos)  
 	tracerCFrame = tracerCFrame * CFrame.Angles(math.pi / 2, 0, 0)  
 	tracer.CFrame = tracerCFrame  
-
 	local mesh = tracer:FindFirstChildOfClass("CylinderMesh")  
-	if mesh then  
-		mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS)  
-	end  
-	  
+	if mesh then mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS) end  
 	tracer.Transparency = TRACER_TRANSPARENCY  
 end  
-
 local function updatePlayerTracers()  
 	local playersWithTracers = {}  
-	  
 	for _, p in ipairs(Players:GetPlayers()) do  
 		if p ~= player then  
 			local targetCharacter = p.Character  
 			local targetPart = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")  
-
 			if targetPart and targetPart.Position and myRootPart.Position then  
 				local tracer = playerTracers[p]  
 				if not tracer then  
 					tracer = createPlayerTracer()  
 					playerTracers[p] = tracer  
 				end  
-				  
 				updatePlayerTracer(tracer, targetPart, myRootPart)  
 				playersWithTracers[p] = true  
 			end  
 		end  
 	end  
-
 	for p, tracer in pairs(playerTracers) do  
 		if not playersWithTracers[p] then  
 			tracer:Destroy()  
@@ -699,12 +520,9 @@ local function updatePlayerTracers()
 		end  
 	end  
 end  
-
 local function removeAllPlayerTracers()  
 	for p, tracer in pairs(playerTracers) do  
-		if tracer and tracer.Parent then  
-			tracer:Destroy()  
-		end  
+		if tracer and tracer.Parent then tracer:Destroy() end  
 	end  
 	playerTracers = {}  
 end  
@@ -714,9 +532,9 @@ local function createNpcLabel(npcName)
 	local label = Instance.new("TextLabel")  
 	label.BackgroundTransparency = 1  
 	label.Size = UDim2.new(0, 100, 0, 20)  
-	label.TextColor3 = NPC_ACCENT_COLOR  
+	label.TextColor3 = ESP_ACCENT  
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)  
-	label.TextStrokeTransparency = 0  
+	label.TextStrokeTransparency = 0.5  
 	label.TextScaled = true  
 	label.Font = Enum.Font.SourceSansBold  
 	label.Text = npcName  
@@ -725,7 +543,6 @@ local function createNpcLabel(npcName)
 	label.Parent = screenGui2  
 	return label  
 end  
-
 local function updateNpcLabels()  
 	local existingNpcs = {}  
 	for _, npc in ipairs(npcsFolder:GetChildren()) do  
@@ -734,10 +551,7 @@ local function updateNpcLabels()
 			local distance = (myRootPart.Position - rootPart.Position).Magnitude  
 			if distance <= NPC_ESP_DISTANCE then  
 				existingNpcs[npc] = true  
-				if not npcLabels[npc] then  
-					npcLabels[npc] = createNpcLabel(npc.Name)  
-				end  
-				  
+				if not npcLabels[npc] then npcLabels[npc] = createNpcLabel(npc.Name) end  
 				local label = npcLabels[npc]  
 				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))  
 				if onScreen then  
@@ -749,358 +563,144 @@ local function updateNpcLabels()
 			end  
 		end  
 	end  
-
-	-- Clean up labels for NPCs that are no longer in range or removed  
 	for npc, label in pairs(npcLabels) do  
-		if not existingNpcs[npc] then  
-			label:Destroy()  
-			npcLabels[npc] = nil  
-		end  
+		if not existingNpcs[npc] then label:Destroy() npcLabels[npc] = nil end  
 	end  
 end  
-
 local function removeAllNpcLabels()  
 	for _, label in pairs(npcLabels) do  
-		if label and label.Parent then  
-			label:Destroy()  
-		end  
+		if label and label.Parent then label:Destroy() end  
 	end  
 	npcLabels = {}  
 end  
 
 -- =================================================================  
--- === Farm Level Menu (Menu 3) ====================================  
+-- === Menu 3: Farm Level ==========================================  
 -- =================================================================  
-
--- SETUP UI ELEMENTS FOR MENU 3  
 local screenGui3 = Instance.new("ScreenGui")  
-screenGui3.Name = "FarmMenu"  
+screenGui3.Name = "FarmLevelMenu"  
 screenGui3.ResetOnSpawn = false  
 screenGui3.Parent = PlayerGui  
 
-local mainFrame3 = Instance.new("Frame")  
-mainFrame3.Name = "MainFrame"  
-mainFrame3.Size = UI_SIZE  
-mainFrame3.Position = UDim2.new(0.5, -150, 0.5, 300)  
-mainFrame3.BackgroundColor3 = PRIMARY_COLOR  
-mainFrame3.BorderSizePixel = 0  
-mainFrame3.AnchorPoint = Vector2.new(0.5, 0.5)  
-mainFrame3.ClipsDescendants = true  
-mainFrame3.Parent = screenGui3  
+local mainFrame3, corner3, stroke3 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, 300), screenGui3, FROSTED_BACKGROUND, false)  
+local titleBar3, minimizeButton3, nukeButton3 = createTitleBar(mainFrame3, "Farm Level", FARM_ACCENT)  
+setupDrag(mainFrame3, titleBar3)  
 
-local corner3 = Instance.new("UICorner")  
-corner3.CornerRadius = UDim.new(0, 8)  
-corner3.Parent = mainFrame3  
-
-local stroke3 = Instance.new("UIStroke")  
-stroke3.Color = Color3.fromRGB(60, 60, 60)  
-stroke3.Thickness = 1.5  
-stroke3.Parent = mainFrame3  
-
-local gradient3 = Instance.new("UIGradient")  
-gradient3.Color = ColorSequence.new(  
-	Color3.fromRGB(60, 60, 60),  
-	Color3.fromRGB(45, 45, 45)  
-)  
-gradient3.Rotation = 90  
-gradient3.Parent = mainFrame3  
-
-local titleBar3 = Instance.new("Frame")  
-titleBar3.Name = "TitleBar"  
-titleBar3.Size = UDim2.new(1, 0, 0, 40)  
-titleBar3.BackgroundColor3 = HEADER_COLOR  
-titleBar3.BorderSizePixel = 0  
-titleBar3.Parent = mainFrame3  
-
-local titleBarCorner3 = Instance.new("UICorner")  
-titleBarCorner3.CornerRadius = UDim.new(0, 8)  
-titleBarCorner3.Parent = titleBar3  
-
-local titleLabel3 = Instance.new("TextLabel")  
-titleLabel3.Name = "TitleLabel"  
-titleLabel3.Size = UDim2.new(1, -70, 1, 0)  
-titleLabel3.Position = UDim2.new(0, 5, 0, 0)  
-titleLabel3.BackgroundTransparency = 1  
-titleLabel3.TextColor3 = FARM_ACCENT_COLOR  
-titleLabel3.TextScaled = true  
-titleLabel3.Font = TITLE_FONT  
-titleLabel3.Text = "Level Menu"  
-titleLabel3.TextXAlignment = Enum.TextXAlignment.Left  
-titleLabel3.Parent = titleBar3  
-
-local minimizeButton3 = Instance.new("TextButton")  
-minimizeButton3.Name = "MinimizeButton"  
-minimizeButton3.Size = UDim2.new(0, 30, 1, -5)  
-minimizeButton3.Position = UDim2.new(1, -65, 0, 2)  
-minimizeButton3.BackgroundColor3 = PRIMARY_COLOR  
-minimizeButton3.BorderSizePixel = 0  
-minimizeButton3.Text = "-"  
-minimizeButton3.TextColor3 = TEXT_COLOR  
-minimizeButton3.TextSize = 25  
-minimizeButton3.Font = TITLE_FONT  
-minimizeButton3.Parent = titleBar3  
-
-local nukeButton3 = Instance.new("TextButton")  
-nukeButton3.Name = "NukeButton"  
-nukeButton3.Size = UDim2.new(0, 30, 1, -5)  
-nukeButton3.Position = UDim2.new(1, -32, 0, 2)  
-nukeButton3.BackgroundColor3 = Color3.fromRGB(255, 50, 50)  
-nukeButton3.BorderSizePixel = 0  
-nukeButton3.Text = "X"  
-nukeButton3.TextColor3 = TEXT_COLOR  
-nukeButton3.TextSize = 20  
-nukeButton3.Font = TITLE_FONT  
-nukeButton3.Parent = titleBar3  
-
--- UI for Level Status
-local levelStatusFrame = Instance.new("Frame")
-levelStatusFrame.Name = "LevelStatusFrame"
-levelStatusFrame.Size = UDim2.new(1, -20, 0, 50)
-levelStatusFrame.Position = UDim2.new(0, 10, 0, 50)
-levelStatusFrame.BackgroundColor3 = PRIMARY_COLOR
-levelStatusFrame.BorderSizePixel = 0
-levelStatusFrame.ClipsDescendants = true
-levelStatusFrame.Visible = false
-levelStatusFrame.Parent = mainFrame3
-
-local levelStatusCorner = Instance.new("UICorner")
-levelStatusCorner.CornerRadius = UDim.new(0, 5)
-levelStatusCorner.Parent = levelStatusFrame
-
-local levelStatusLabel = Instance.new("TextLabel")
-levelStatusLabel.Name = "LevelStatusLabel"
-levelStatusLabel.Size = UDim2.new(1, 0, 1, 0)
-levelStatusLabel.BackgroundTransparency = 1
-levelStatusLabel.TextColor3 = TEXT_COLOR
-levelStatusLabel.Text = "Level Status"
-levelStatusLabel.TextScaled = true
-levelStatusLabel.Font = TITLE_FONT
-levelStatusLabel.Parent = levelStatusFrame
-
--- Toggle button for "farm level"
-local farmLevelCheckbox = Instance.new("TextButton")  
-farmLevelCheckbox.Name = "FarmLevelCheckbox"  
-farmLevelCheckbox.Size = UDim2.new(1, -20, 0, 30)  
-farmLevelCheckbox.Position = UDim2.new(0, 10, 0, 110)
-farmLevelCheckbox.BackgroundTransparency = 1  
-farmLevelCheckbox.BorderSizePixel = 0  
-farmLevelCheckbox.Text = ""  
-farmLevelCheckbox.Parent = mainFrame3
-
-local farmLevelCheckboxBox = Instance.new("Frame")  
-farmLevelCheckboxBox.Name = "CheckboxBox"  
-farmLevelCheckboxBox.Size = UDim2.new(0, 20, 0, 20)  
-farmLevelCheckboxBox.Position = UDim2.new(0, 5, 0.5, -10)  
-farmLevelCheckboxBox.BackgroundColor3 = PRIMARY_COLOR  
-farmLevelCheckboxBox.BorderSizePixel = 1  
-farmLevelCheckboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)  
-farmLevelCheckboxBox.Parent = farmLevelCheckbox  
-
-local farmLevelCheckmark = Instance.new("ImageLabel")  
-farmLevelCheckmark.Name = "Checkmark"  
-farmLevelCheckmark.BackgroundTransparency = 1  
-farmLevelCheckmark.Size = UDim2.new(1, 0, 1, 0)  
-farmLevelCheckmark.Image = "rbxassetid://603417770"  
-farmLevelCheckmark.ImageColor3 = FARM_ACCENT_COLOR  
-farmLevelCheckmark.Visible = false  
-farmLevelCheckmark.Parent = farmLevelCheckboxBox
-
-local farmLevelLabel = Instance.new("TextLabel")  
-farmLevelLabel.Name = "FarmLevelLabel"  
-farmLevelLabel.Size = UDim2.new(1, -30, 1, 0)  
-farmLevelLabel.Position = UDim2.new(0, 30, 0, 0)  
-farmLevelLabel.BackgroundTransparency = 1  
-farmLevelLabel.TextColor3 = TEXT_COLOR  
-farmLevelLabel.Text = "Farm Level"  
-farmLevelLabel.TextScaled = true  
-farmLevelLabel.Font = TITLE_FONT  
-farmLevelLabel.TextXAlignment = Enum.TextXAlignment.Left  
-farmLevelLabel.Parent = farmLevelCheckbox
-
-local isFarmLevelActive = false
-farmLevelCheckbox.MouseButton1Click:Connect(function()
-	isFarmLevelActive = not isFarmLevelActive
-	farmLevelCheckmark.Visible = isFarmLevelActive
-	farmLevelCheckboxBox.BackgroundColor3 = if isFarmLevelActive then FARM_ACCENT_COLOR else PRIMARY_COLOR
-	levelStatusFrame.Visible = isFarmLevelActive
-end)
-
--- DRAGGING FUNCTIONALITY FOR MENU 3  
-local isDragging3 = false  
-local dragStartPos3 = Vector2.new(0, 0)  
-local dragStartFramePosition3 = UDim2.new(0, 0, 0, 0)  
-
-titleBar3.InputBegan:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging3 = true  
-		dragStartPos3 = input.Position  
-		dragStartFramePosition3 = mainFrame3.Position  
-		UserInputService.MouseIconEnabled = false  
-	end  
-end)  
-
-UserInputService.InputEnded:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging3 = false  
-		UserInputService.MouseIconEnabled = true  
-	end  
-end)  
-
-UserInputService.InputChanged:Connect(function(input)  
-	if isDragging3 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
-		local delta = input.Position - dragStartPos3  
-		local newPosition = dragStartFramePosition3 + UDim2.new(0, delta.X, 0, delta.Y)  
-		mainFrame3.Position = newPosition  
-	end  
-end)  
-
--- BUTTON FUNCTIONALITY FOR MENU 3  
 local isMinimized3 = false  
 minimizeButton3.MouseButton1Click:Connect(function()  
 	isMinimized3 = not isMinimized3  
-
-	local targetSize  
-	if isMinimized3 then  
-		targetSize = MINIMIZED_SIZE  
-	else  
-		targetSize = UI_SIZE  
-	end  
+	local targetSize = if isMinimized3 then MINIMIZED_SIZE else UI_SIZE  
 	local targetClipsDescendants = not isMinimized3  
+	TweenService:Create(mainFrame3, tweenInfo, {Size = targetSize}):Play()  
+	task.delay(0.2, function() mainFrame3.ClipsDescendants = targetClipsDescendants end)  
+	minimizeButton3.Text = if isMinimized3 then "+" else "-"  
+end)  
 
-	local tween = TweenService:Create(mainFrame3, tweenInfo, {Size = targetSize})  
-	tween:Play()  
+-- UI for Level Status  
+local levelStatusFrame = Instance.new("Frame")  
+levelStatusFrame.Name = "LevelStatusFrame"  
+levelStatusFrame.LayoutOrder = 2
+levelStatusFrame.Size = UDim2.new(1, -20, 0, 50)  
+levelStatusFrame.BackgroundColor3 = FROSTED_BACKGROUND
+levelStatusFrame.BackgroundTransparency = 0.5
+levelStatusFrame.BorderSizePixel = 0  
+levelStatusFrame.ClipsDescendants = true  
+levelStatusFrame.Visible = false  
+levelStatusFrame.Parent = mainFrame3  
 
-	task.delay(0.2, function()  
-		mainFrame3.ClipsDescendants = targetClipsDescendants  
-	end)  
+local levelStatusCorner = Instance.new("UICorner")  
+levelStatusCorner.CornerRadius = UDim.new(0, 8)  
+levelStatusCorner.Parent = levelStatusFrame  
 
-	if isMinimized3 then  
-		minimizeButton3.Text = "+"  
-	else  
-		minimizeButton3.Text = "-"  
-	end  
+local levelStatusLabel = Instance.new("TextLabel")  
+levelStatusLabel.Name = "LevelStatusLabel"  
+levelStatusLabel.Size = UDim2.new(1, 0, 1, 0)  
+levelStatusLabel.BackgroundTransparency = 1  
+levelStatusLabel.TextColor3 = FONT_COLOR  
+levelStatusLabel.Text = "Level Status"  
+levelStatusLabel.TextScaled = true  
+levelStatusLabel.Font = TITLE_FONT  
+levelStatusLabel.Parent = levelStatusFrame  
+
+-- Toggle button for "farm level"  
+local farmLevelToggle, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(mainFrame3, "Farm Level", FARM_ACCENT, false)
+farmLevelToggle.LayoutOrder = 1
+local isFarmLevelActive = false  
+farmLevelToggle.MouseButton1Click:Connect(function()  
+	isFarmLevelActive = not isFarmLevelActive  
+	farmLevelCheckmark.Visible = isFarmLevelActive  
+	TweenService:Create(farmLevelToggleBox, tweenInfo, {BackgroundColor3 = if isFarmLevelActive then FARM_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	levelStatusFrame.Visible = isFarmLevelActive  
 end)  
 
 -- LEVEL CHECKING FUNCTIONALITY  
-task.spawn(function()
-	while task.wait(1) do
-		if not screenGui3.Parent then break end
-		if isFarmLevelActive then
-			local dataFolder = player:FindFirstChild("Data")
-			if dataFolder then
-				local levelValue = dataFolder:FindFirstChild("Level")
-				if levelValue and levelValue:IsA("IntValue") then
-					local currentLevel = levelValue.Value
-					if currentLevel >= 0 and currentLevel <= 10 then
-						levelStatusLabel.Text = "Your current level is: " .. currentLevel
-					else
-						levelStatusLabel.Text = "Level is not between 0-10"
-					end
-				else
-					levelStatusLabel.Text = "Level IntValue not found!"
-				end
-			else
-				levelStatusLabel.Text = "Data folder not found!"
-			end
-		end
-	end
-end)
-
--- EVENT HANDLING  
--- We'll manage creation/removal of labels and tracers here instead of in the main loop  
-Players.PlayerAdded:Connect(function(p)  
-	if p ~= player then  
-		playerLabels[p] = createPlayerLabel()  
-		playerTracers[p] = createPlayerTracer()  
+task.spawn(function()  
+	while task.wait(1) do  
+		if not screenGui3.Parent then break end  
+		if isFarmLevelActive then  
+			local dataFolder = player:FindFirstChild("Data")  
+			if dataFolder then  
+				local levelValue = dataFolder:FindFirstChild("Level")  
+				if levelValue and levelValue:IsA("IntValue") then  
+					local currentLevel = levelValue.Value  
+					if currentLevel >= 0 and currentLevel <= 10 then  
+						levelStatusLabel.Text = "Your current level is: " .. currentLevel  
+					else  
+						levelStatusLabel.Text = "Level is not between 0-10"  
+					end  
+					levelStatusLabel.TextColor3 = FONT_COLOR
+				else  
+					levelStatusLabel.Text = "Level IntValue not found!"  
+					levelStatusLabel.TextColor3 = BOSS_ACCENT
+				end  
+			else  
+				levelStatusLabel.Text = "Data folder not found!"  
+				levelStatusLabel.TextColor3 = BOSS_ACCENT
+			end  
+		end  
 	end  
 end)  
 
+-- =================================================================  
+-- === Event Handling & Cleanup ====================================  
+-- =================================================================  
+Players.PlayerAdded:Connect(function(p)  
+	if p ~= player then playerLabels[p] = createPlayerLabel() playerTracers[p] = createPlayerTracer() end  
+end)  
 Players.PlayerRemoving:Connect(function(p)  
 	local label = playerLabels[p]  
-	if label then  
-		label:Destroy()  
-		playerLabels[p] = nil  
-	end  
+	if label then label:Destroy() playerLabels[p] = nil end  
 	local tracer = playerTracers[p]  
-	if tracer then  
-		tracer:Destroy()  
-		playerTracers[p] = nil  
-	end  
+	if tracer then tracer:Destroy() playerTracers[p] = nil end  
 end)  
 
--- Initialize labels for existing players on startup  
 createPlayerLabelsForExistingPlayers()  
 
--- Main ESP loop  
 RunService.RenderStepped:Connect(function()  
 	myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")  
 	if not myRootPart then return end  
-
-	-- Player ESP  
 	local isPlayerLabelEspActive = playerCheckboxState["Username ESP"] or playerCheckboxState["Distance ESP"]  
 	local isTracingActive = playerCheckboxState["Player Tracing"]  
-
-	if isPlayerLabelEspActive then  
-		updatePlayerLabels()  
-	else  
-		-- If ESP is disabled, hide all labels instead of destroying them  
-		for _, label in pairs(playerLabels) do  
-			label.Visible = false  
-		end  
-	end  
-
-	-- Player Tracers  
-	if isTracingActive then  
-		updatePlayerTracers()  
-	else  
-		for _, tracer in pairs(playerTracers) do  
-			tracer.Transparency = 1 -- Hide tracers by making them transparent  
-		end  
-	end  
-
-	-- NPC ESP  
-	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then  
-		updateNpcLabels()  
-	else  
-		-- If NPC ESP is off, hide all labels  
-		for _, label in pairs(npcLabels) do  
-			label.Visible = false  
-		end  
-	end  
+	if isPlayerLabelEspActive then updatePlayerLabels() else for _, label in pairs(playerLabels) do label.Visible = false end end  
+	if isTracingActive then updatePlayerTracers() else for _, tracer in pairs(playerTracers) do tracer.Transparency = 1 end end  
+	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end  
 end)  
 
 local function checkAndDestroyScript()  
 	if not screenGui1.Parent and not screenGui2.Parent and not screenGui3.Parent then  
-		-- Clean up the tracer container when the menus are closed  
-		if TracerContainer then  
-			TracerContainer:Destroy()  
-		end  
+		if TracerContainer then TracerContainer:Destroy() end  
 		script:Destroy()  
 	end  
 end  
 
-nukeButton1.MouseButton1Click:Connect(function()  
-	screenGui1:Destroy()  
-	checkAndDestroyScript()  
-end)  
-
+nukeButton1.MouseButton1Click:Connect(function() screenGui1:Destroy() checkAndDestroyScript() end)  
 nukeButton2.MouseButton1Click:Connect(function()  
 	removeAllPlayerLabels()  
 	removeAllNpcLabels()  
 	removeAllPlayerTracers()  
-	  
-	for espName, _ in pairs(playerCheckboxState) do  
-		playerCheckboxState[espName] = false  
-	end  
-	for npcName, _ in pairs(npcCheckboxState) do  
-		npcCheckboxState[npcName] = false  
-	end  
-	  
+	for espName, _ in pairs(playerCheckboxState) do playerCheckboxState[espName] = false end  
+	for npcName, _ in pairs(npcCheckboxState) do npcCheckboxState[npcName] = false end  
 	screenGui2:Destroy()  
 	checkAndDestroyScript()  
 end)  
-
-nukeButton3.MouseButton1Click:Connect(function()  
-	screenGui3:Destroy()
-	checkAndDestroyScript()
-end)
+nukeButton3.MouseButton1Click:Connect(function() screenGui3:Destroy() checkAndDestroyScript() end)  
