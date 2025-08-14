@@ -1,12 +1,10 @@
 --!strict
 --[[
-	A LocalScript to create three beautiful, draggable, and dynamic UI menus.
+	A LocalScript to create two beautiful, draggable, and dynamic UI menus.
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version has been optimized for better performance and
-	addresses the issue of tracers being too big, invisible through objects, and adds a save/load function.
-	This version has been updated to check ReplicatedStorage for Boat Dealer NPCs.
-	This version also adds a new "Fruit" menu with a teleport toggle.
+	addresses the issue of tracers being too big and invisible through objects.
 ]]
 
 -- SERVICES
@@ -16,7 +14,6 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local DataStoreService = game:GetService("DataStoreService")
 
 -- CONFIGURATION
 local UI_SIZE = UDim2.new(0, 300, 0, 400)
@@ -26,7 +23,6 @@ local HEADER_COLOR = Color3.fromRGB(30, 30, 30)
 local PRIMARY_COLOR = Color3.fromRGB(45, 45, 45)
 local ACCENT_COLOR = Color3.fromRGB(0, 170, 255)
 local NPC_ACCENT_COLOR = Color3.fromRGB(0, 85, 255)
-local FRUIT_ACCENT_COLOR = Color3.fromRGB(255, 50, 50) -- New accent color for fruits
 local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
 local SECONDARY_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)
 local PLAYER_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)
@@ -42,20 +38,16 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 local character = player.Character or player.CharacterAdded:Wait()
 local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any
 
--- DataStore to save/load settings
-local settingsDataStore = DataStoreService:GetDataStore("ESP_Settings")
-
 -- Create a container for the tracers to ensure they are always visible
 local TracerContainer = Instance.new("Folder")
 TracerContainer.Name = "TracerContainer"
 TracerContainer.Parent = Workspace
 
 -- =================================================================
--- === UI CREATION SECTION =========================================
--- This section handles all UI instance creation and styling.
+-- === Boss Status Menu (Menu 1) ===================================
 -- =================================================================
 
--- Menu 1 UI (Bosses)
+-- SETUP UI ELEMENTS FOR MENU 1
 local screenGui1 = Instance.new("ScreenGui")
 screenGui1.Name = "SawBossMenu"
 screenGui1.ResetOnSpawn = false
@@ -134,546 +126,6 @@ nukeButton1.TextColor3 = TEXT_COLOR
 nukeButton1.TextSize = 20
 nukeButton1.Font = TITLE_FONT
 nukeButton1.Parent = titleBar1
-
--- Menu 2 UI (Player/NPC ESP)
-local screenGui2 = Instance.new("ScreenGui")
-screenGui2.Name = "PlayerESPMenu"
-screenGui2.ResetOnSpawn = false
-screenGui2.Parent = PlayerGui
-
-local mainFrame2 = Instance.new("Frame")
-mainFrame2.Name = "MainFrame"
-mainFrame2.Size = UI_SIZE
-mainFrame2.Position = UDim2.new(0.5, -150, 0.5, 100)
-mainFrame2.BackgroundColor3 = PRIMARY_COLOR
-mainFrame2.BorderSizePixel = 0
-mainFrame2.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame2.ClipsDescendants = true
-mainFrame2.Parent = screenGui2
-
-local corner2 = Instance.new("UICorner")
-corner2.CornerRadius = UDim.new(0, 8)
-corner2.Parent = mainFrame2
-
-local stroke2 = Instance.new("UIStroke")
-stroke2.Color = Color3.fromRGB(60, 60, 60)
-stroke2.Thickness = 1.5
-stroke2.Parent = mainFrame2
-
-local gradient2 = Instance.new("UIGradient")
-gradient2.Color = ColorSequence.new(
-	Color3.fromRGB(60, 60, 60),
-	Color3.fromRGB(45, 45, 45)
-)
-gradient2.Rotation = 90
-gradient2.Parent = mainFrame2
-
-local titleBar2 = Instance.new("Frame")
-titleBar2.Name = "TitleBar"
-titleBar2.Size = UDim2.new(1, 0, 0, 40)
-titleBar2.BackgroundColor3 = HEADER_COLOR
-titleBar2.BorderSizePixel = 0
-titleBar2.Parent = mainFrame2
-
-local titleBarCorner2 = Instance.new("UICorner")
-titleBarCorner2.CornerRadius = UDim.new(0, 8)
-titleBarCorner2.Parent = titleBar2
-
-local titleLabel2 = Instance.new("TextLabel")
-titleLabel2.Name = "TitleLabel"
-titleLabel2.Size = UDim2.new(1, -70, 1, 0)
-titleLabel2.Position = UDim2.new(0, 5, 0, 0)
-titleLabel2.BackgroundTransparency = 1
-titleLabel2.TextColor3 = SECONDARY_ACCENT_COLOR
-titleLabel2.TextScaled = true
-titleLabel2.Font = TITLE_FONT
-titleLabel2.Text = "Player & NPC ESP Menu"
-titleLabel2.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel2.Parent = titleBar2
-
-local minimizeButton2 = Instance.new("TextButton")
-minimizeButton2.Name = "MinimizeButton"
-minimizeButton2.Size = UDim2.new(0, 30, 1, -5)
-minimizeButton2.Position = UDim2.new(1, -65, 0, 2)
-minimizeButton2.BackgroundColor3 = PRIMARY_COLOR
-minimizeButton2.BorderSizePixel = 0
-minimizeButton2.Text = "-"
-minimizeButton2.TextColor3 = TEXT_COLOR
-minimizeButton2.TextSize = 25
-minimizeButton2.Font = TITLE_FONT
-minimizeButton2.Parent = titleBar2
-
-local nukeButton2 = Instance.new("TextButton")
-nukeButton2.Name = "NukeButton"
-nukeButton2.Size = UDim2.new(0, 30, 1, -5)
-nukeButton2.Position = UDim2.new(1, -32, 0, 2)
-nukeButton2.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-nukeButton2.BorderSizePixel = 0
-nukeButton2.Text = "X"
-nukeButton2.TextColor3 = TEXT_COLOR
-nukeButton2.TextSize = 20
-nukeButton2.Font = TITLE_FONT
-nukeButton2.Parent = titleBar2
-
-local settingsButtonsContainer = Instance.new("Frame")
-settingsButtonsContainer.Name = "SettingsButtons"
-settingsButtonsContainer.Size = UDim2.new(1, -20, 0, 85)
-settingsButtonsContainer.Position = UDim2.new(0, 10, 0.5, 140)
-settingsButtonsContainer.BackgroundTransparency = 1
-settingsButtonsContainer.Parent = mainFrame2
-
-local settingsLayout = Instance.new("UIListLayout")
-settingsLayout.Padding = UDim.new(0, 5)
-settingsLayout.FillDirection = Enum.FillDirection.Vertical
-settingsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-settingsLayout.Parent = settingsButtonsContainer
-
-local saveButton = Instance.new("TextButton")
-saveButton.Name = "SaveSettingsButton"
-saveButton.Size = UDim2.new(1, 0, 0, 25)
-saveButton.BackgroundColor3 = SECONDARY_ACCENT_COLOR
-saveButton.BorderSizePixel = 0
-saveButton.Text = "Save Settings"
-saveButton.TextColor3 = TEXT_COLOR
-saveButton.Font = TITLE_FONT
-saveButton.Parent = settingsButtonsContainer
-
-local loadButton = Instance.new("TextButton")
-loadButton.Name = "LoadSettingsButton"
-loadButton.Size = UDim2.new(1, 0, 0, 25)
-loadButton.BackgroundColor3 = ACCENT_COLOR
-loadButton.BorderSizePixel = 0
-loadButton.Text = "Load Settings"
-loadButton.TextColor3 = TEXT_COLOR
-loadButton.Font = TITLE_FONT
-loadButton.Parent = settingsButtonsContainer
-
-local clearButton = Instance.new("TextButton")
-clearButton.Name = "ClearSettingsButton"
-clearButton.Size = UDim2.new(1, 0, 0, 25)
-clearButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-clearButton.BorderSizePixel = 0
-clearButton.Text = "Clear Settings"
-clearButton.TextColor3 = TEXT_COLOR
-clearButton.Font = TITLE_FONT
-clearButton.Parent = settingsButtonsContainer
-
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 0.5, 200)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = TEXT_COLOR
-statusLabel.Text = "Settings status: Ready"
-statusLabel.TextScaled = true
-statusLabel.Font = TITLE_FONT
-statusLabel.Parent = mainFrame2
-
--- Player ESP Section
-local playerEspLabel = Instance.new("TextLabel")
-playerEspLabel.Name = "PlayerEspLabel"
-playerEspLabel.Text = "Player ESP Options"
-playerEspLabel.Size = UDim2.new(1, -20, 0, 25)
-playerEspLabel.Position = UDim2.new(0, 10, 0, 50)
-playerEspLabel.BackgroundTransparency = 1
-playerEspLabel.TextColor3 = SECONDARY_ACCENT_COLOR
-playerEspLabel.TextScaled = true
-playerEspLabel.Font = TITLE_FONT
-playerEspLabel.TextXAlignment = Enum.TextXAlignment.Left
-playerEspLabel.Parent = mainFrame2
-
-local playerEspButtonsContainer = Instance.new("Frame")
-playerEspButtonsContainer.Name = "PlayerEspButtonsContainer"
-playerEspButtonsContainer.Size = UDim2.new(1, -20, 0.35, 0)
-playerEspButtonsContainer.Position = UDim2.new(0, 10, 0, 80)
-playerEspButtonsContainer.BackgroundTransparency = 1
-playerEspButtonsContainer.Parent = mainFrame2
-
-local playerListLayout = Instance.new("UIListLayout")
-playerListLayout.Padding = UDim.new(0, 5)
-playerListLayout.FillDirection = Enum.FillDirection.Vertical
-playerListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-playerListLayout.Parent = playerEspButtonsContainer
-
-local playerEspTypes = {
-	["Username ESP"] = false,
-	["Distance ESP"] = false,
-	["Player Tracing"] = false,
-}
-
-local playerCheckboxState = {
-	["Username ESP"] = false,
-	["Distance ESP"] = false,
-	["Player Tracing"] = false,
-}
-
-local playerCheckboxes = {}
-
-local function createPlayerEspCheckbox(espName)
-	local button = Instance.new("TextButton")
-	button.Name = espName .. "Checkbox"
-	button.Size = UDim2.new(1, 0, 0, 30)
-	button.BackgroundTransparency = 1
-	button.BorderSizePixel = 0
-	button.Text = ""
-	button.Parent = playerEspButtonsContainer
-
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 5)
-	buttonCorner.Parent = button
-
-	local checkboxBox = Instance.new("Frame")
-	checkboxBox.Name = "CheckboxBox"
-	checkboxBox.Size = UDim2.new(0, 20, 0, 20)
-	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)
-	checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-	checkboxBox.BorderSizePixel = 1
-	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
-	checkboxBox.Parent = button
-
-	local boxCorner = Instance.new("UICorner")
-	boxCorner.CornerRadius = UDim.new(0, 5)
-	boxCorner.Parent = checkboxBox
-
-	local checkboxIcon = Instance.new("ImageLabel")
-	checkboxIcon.Name = "Checkmark"
-	checkboxIcon.BackgroundTransparency = 1
-	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)
-	checkboxIcon.Image = "rbxassetid://603417770"
-	checkboxIcon.ImageColor3 = PLAYER_ACCENT_COLOR
-	checkboxIcon.Visible = false
-	checkboxIcon.Parent = checkboxBox
-
-	local espLabel = Instance.new("TextLabel")
-	espLabel.Name = "EspNameLabel"
-	espLabel.Size = UDim2.new(1, -30, 1, 0)
-	espLabel.Position = UDim2.new(0, 30, 0, 0)
-	espLabel.BackgroundTransparency = 1
-	espLabel.TextColor3 = TEXT_COLOR
-	espLabel.Text = espName
-	espLabel.TextScaled = true
-	espLabel.Font = TITLE_FONT
-	espLabel.TextXAlignment = Enum.TextXAlignment.Left
-	espLabel.Parent = button
-
-	playerCheckboxes[espName] = {button = button, box = checkboxBox, icon = checkboxIcon}
-
-	button.MouseButton1Click:Connect(function()
-		local newState = not playerCheckboxState[espName]
-		playerCheckboxState[espName] = newState
-
-		if newState then
-			checkboxIcon.Visible = true
-			checkboxBox.BackgroundColor3 = PLAYER_ACCENT_COLOR
-		else
-			checkboxIcon.Visible = false
-			checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-		end
-	end)
-end
-
-for espName, _ in pairs(playerEspTypes) do
-	createPlayerEspCheckbox(espName)
-end
-
--- NPC ESP Section
-local npcEspLabel = Instance.new("TextLabel")
-npcEspLabel.Name = "NpcEspLabel"
-npcEspLabel.Text = "NPC ESP Options"
-npcEspLabel.Size = UDim2.new(1, -20, 0, 25)
-npcEspLabel.Position = UDim2.new(0, 10, 0.5, 270)
-npcEspLabel.BackgroundTransparency = 1
-npcEspLabel.TextColor3 = ACCENT_COLOR
-npcEspLabel.TextScaled = true
-npcEspLabel.Font = TITLE_FONT
-npcEspLabel.TextXAlignment = Enum.TextXAlignment.Left
-npcEspLabel.Parent = mainFrame2
-
-local npcEspButtonsContainer = Instance.new("Frame")
-npcEspButtonsContainer.Name = "NpcEspButtonsContainer"
-npcEspButtonsContainer.Size = UDim2.new(1, -20, 0.45, 0)
-npcEspButtonsContainer.Position = UDim2.new(0, 10, 0.5, 300)
-npcEspButtonsContainer.BackgroundTransparency = 1
-npcEspButtonsContainer.Parent = mainFrame2
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
-listLayout.FillDirection = Enum.FillDirection.Vertical
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-listLayout.Parent = npcEspButtonsContainer
-
-local npcTypes = {
-	["Set Home Point"] = false,
-	["Boat Dealer"] = false,
-}
-
-local npcCheckboxState = {
-	["Set Home Point"] = false,
-	["Boat Dealer"] = false,
-}
-
-local npcCheckboxes = {}
-
-local function createNpcEspCheckbox(npcName)
-	local button = Instance.new("TextButton")
-	button.Name = npcName .. "Checkbox"
-	button.Size = UDim2.new(1, 0, 0, 30)
-	button.BackgroundTransparency = 1
-	button.BorderSizePixel = 0
-	button.Text = ""
-	button.Parent = npcEspButtonsContainer
-
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 5)
-	buttonCorner.Parent = button
-
-	local checkboxBox = Instance.new("Frame")
-	checkboxBox.Name = "CheckboxBox"
-	checkboxBox.Size = UDim2.new(0, 20, 0, 20)
-	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)
-	checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-	checkboxBox.BorderSizePixel = 1
-	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
-	checkboxBox.Parent = button
-
-	local boxCorner = Instance.new("UICorner")
-	boxCorner.CornerRadius = UDim.new(0, 5)
-	boxCorner.Parent = checkboxBox
-
-	local checkboxIcon = Instance.new("ImageLabel")
-	checkboxIcon.Name = "Checkmark"
-	checkboxIcon.BackgroundTransparency = 1
-	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)
-	checkboxIcon.Image = "rbxassetid://603417770"
-	checkboxIcon.ImageColor3 = ACCENT_COLOR
-	checkboxIcon.Visible = false
-	checkboxIcon.Parent = checkboxBox
-
-	local npcLabel = Instance.new("TextLabel")
-	npcLabel.Name = "NpcNameLabel"
-	npcLabel.Size = UDim2.new(1, -30, 1, 0)
-	npcLabel.Position = UDim2.new(0, 30, 0, 0)
-	npcLabel.BackgroundTransparency = 1
-	npcLabel.TextColor3 = TEXT_COLOR
-	npcLabel.Text = npcName
-	npcLabel.TextScaled = true
-	npcLabel.Font = TITLE_FONT
-	npcLabel.TextXAlignment = Enum.TextXAlignment.Left
-	npcLabel.Parent = button
-
-	npcCheckboxes[npcName] = {button = button, box = checkboxBox, icon = checkboxIcon}
-
-	button.MouseButton1Click:Connect(function()
-		local newState = not npcCheckboxState[npcName]
-		npcCheckboxState[npcName] = newState
-
-		if newState then
-			checkboxIcon.Visible = true
-			checkboxBox.BackgroundColor3 = NPC_ACCENT_COLOR
-		else
-			checkboxIcon.Visible = false
-			checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-		end
-	end)
-end
-
-for npcName, _ in pairs(npcTypes) do
-	createNpcEspCheckbox(npcName)
-end
-
--- NPC list UI for ReplicatedStorage
-local replicatedStorageNpcFrame = Instance.new("Frame")
-replicatedStorageNpcFrame.Name = "ReplicatedStorageNpcList"
-replicatedStorageNpcFrame.Size = UDim2.new(1, -20, 0.25, 0)
-replicatedStorageNpcFrame.Position = UDim2.new(0, 10, 0.5, 50)
-replicatedStorageNpcFrame.BackgroundTransparency = 1
-replicatedStorageNpcFrame.Parent = mainFrame2
-
-local scrollingFrame = Instance.new("ScrollingFrame")
-scrollingFrame.Name = "NpcScrollingFrame"
-scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-scrollingFrame.BackgroundTransparency = 1
-scrollingFrame.Parent = replicatedStorageNpcFrame
-scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollingFrame.ScrollBarThickness = 6
-
-local npcListLayout = Instance.new("UIListLayout")
-npcListLayout.Padding = UDim.new(0, 5)
-npcListLayout.FillDirection = Enum.FillDirection.Vertical
-npcListLayout.Parent = scrollingFrame
-
--- Menu 3 UI (Fruits)
-local screenGui3 = Instance.new("ScreenGui")
-screenGui3.Name = "FruitMenu"
-screenGui3.ResetOnSpawn = false
-screenGui3.Parent = PlayerGui
-
-local mainFrame3 = Instance.new("Frame")
-mainFrame3.Name = "MainFrame"
-mainFrame3.Size = UI_SIZE
-mainFrame3.Position = UDim2.new(0.5, -150, 0.5, 300)
-mainFrame3.BackgroundColor3 = PRIMARY_COLOR
-mainFrame3.BorderSizePixel = 0
-mainFrame3.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame3.ClipsDescendants = true
-mainFrame3.Parent = screenGui3
-
-local corner3 = Instance.new("UICorner")
-corner3.CornerRadius = UDim.new(0, 8)
-corner3.Parent = mainFrame3
-
-local stroke3 = Instance.new("UIStroke")
-stroke3.Color = Color3.fromRGB(60, 60, 60)
-stroke3.Thickness = 1.5
-stroke3.Parent = mainFrame3
-
-local gradient3 = Instance.new("UIGradient")
-gradient3.Color = ColorSequence.new(
-	Color3.fromRGB(60, 60, 60),
-	Color3.fromRGB(45, 45, 45)
-)
-gradient3.Rotation = 90
-gradient3.Parent = mainFrame3
-
-local titleBar3 = Instance.new("Frame")
-titleBar3.Name = "TitleBar"
-titleBar3.Size = UDim2.new(1, 0, 0, 40)
-titleBar3.BackgroundColor3 = HEADER_COLOR
-titleBar3.BorderSizePixel = 0
-titleBar3.Parent = mainFrame3
-
-local titleBarCorner3 = Instance.new("UICorner")
-titleBarCorner3.CornerRadius = UDim.new(0, 8)
-titleBarCorner3.Parent = titleBar3
-
-local titleLabel3 = Instance.new("TextLabel")
-titleLabel3.Name = "TitleLabel"
-titleLabel3.Size = UDim2.new(1, -70, 1, 0)
-titleLabel3.Position = UDim2.new(0, 5, 0, 0)
-titleLabel3.BackgroundTransparency = 1
-titleLabel3.TextColor3 = FRUIT_ACCENT_COLOR
-titleLabel3.TextScaled = true
-titleLabel3.Font = TITLE_FONT
-titleLabel3.Text = "Fruit"
-titleLabel3.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel3.Parent = titleBar3
-
-local minimizeButton3 = Instance.new("TextButton")
-minimizeButton3.Name = "MinimizeButton"
-minimizeButton3.Size = UDim2.new(0, 30, 1, -5)
-minimizeButton3.Position = UDim2.new(1, -65, 0, 2)
-minimizeButton3.BackgroundColor3 = PRIMARY_COLOR
-minimizeButton3.BorderSizePixel = 0
-minimizeButton3.Text = "-"
-minimizeButton3.TextColor3 = TEXT_COLOR
-minimizeButton3.TextSize = 25
-minimizeButton3.Font = TITLE_FONT
-minimizeButton3.Parent = titleBar3
-
-local nukeButton3 = Instance.new("TextButton")
-nukeButton3.Name = "NukeButton"
-nukeButton3.Size = UDim2.new(0, 30, 1, -5)
-nukeButton3.Position = UDim2.new(1, -32, 0, 2)
-nukeButton3.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-nukeButton3.BorderSizePixel = 0
-nukeButton3.Text = "X"
-nukeButton3.TextColor3 = TEXT_COLOR
-nukeButton3.TextSize = 20
-nukeButton3.Font = TITLE_FONT
-nukeButton3.Parent = titleBar3
-
-local fruitEspButtonsContainer = Instance.new("Frame")
-fruitEspButtonsContainer.Name = "FruitEspButtonsContainer"
-fruitEspButtonsContainer.Size = UDim2.new(1, -20, 0.45, 0)
-fruitEspButtonsContainer.Position = UDim2.new(0, 10, 0, 50)
-fruitEspButtonsContainer.BackgroundTransparency = 1
-fruitEspButtonsContainer.Parent = mainFrame3
-
-local fruitListLayout = Instance.new("UIListLayout")
-fruitListLayout.Padding = UDim.new(0, 5)
-fruitListLayout.FillDirection = Enum.FillDirection.Vertical
-fruitListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-fruitListLayout.Parent = fruitEspButtonsContainer
-
-local fruitCheckboxState = {
-	["Tp to Fruits"] = false,
-}
-
-local fruitCheckboxes = {}
-
-local function createFruitEspCheckbox(fruitName)
-	local button = Instance.new("TextButton")
-	button.Name = fruitName .. "Checkbox"
-	button.Size = UDim2.new(1, 0, 0, 30)
-	button.BackgroundTransparency = 1
-	button.BorderSizePixel = 0
-	button.Text = ""
-	button.Parent = fruitEspButtonsContainer
-
-	local buttonCorner = Instance.new("UICorner")
-	buttonCorner.CornerRadius = UDim.new(0, 5)
-	buttonCorner.Parent = button
-
-	local checkboxBox = Instance.new("Frame")
-	checkboxBox.Name = "CheckboxBox"
-	checkboxBox.Size = UDim2.new(0, 20, 0, 20)
-	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)
-	checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-	checkboxBox.BorderSizePixel = 1
-	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
-	checkboxBox.Parent = button
-
-	local boxCorner = Instance.new("UICorner")
-	boxCorner.CornerRadius = UDim.new(0, 5)
-	boxCorner.Parent = checkboxBox
-
-	local checkboxIcon = Instance.new("ImageLabel")
-	checkboxIcon.Name = "Checkmark"
-	checkboxIcon.BackgroundTransparency = 1
-	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)
-	checkboxIcon.Image = "rbxassetid://603417770"
-	checkboxIcon.ImageColor3 = FRUIT_ACCENT_COLOR
-	checkboxIcon.Visible = false
-	checkboxIcon.Parent = checkboxBox
-
-	local fruitLabel = Instance.new("TextLabel")
-	fruitLabel.Name = "FruitNameLabel"
-	fruitLabel.Size = UDim2.new(1, -30, 1, 0)
-	fruitLabel.Position = UDim2.new(0, 30, 0, 0)
-	fruitLabel.BackgroundTransparency = 1
-	fruitLabel.TextColor3 = TEXT_COLOR
-	fruitLabel.Text = fruitName
-	fruitLabel.TextScaled = true
-	fruitLabel.Font = TITLE_FONT
-	fruitLabel.TextXAlignment = Enum.TextXAlignment.Left
-	fruitLabel.Parent = button
-
-	fruitCheckboxes[fruitName] = {button = button, box = checkboxBox, icon = checkboxIcon}
-
-	button.MouseButton1Click:Connect(function()
-		local newState = not fruitCheckboxState[fruitName]
-		fruitCheckboxState[fruitName] = newState
-
-		if newState then
-			checkboxIcon.Visible = true
-			checkboxBox.BackgroundColor3 = FRUIT_ACCENT_COLOR
-		else
-			checkboxIcon.Visible = false
-			checkboxBox.BackgroundColor3 = PRIMARY_COLOR
-		end
-	end)
-end
-
-for fruitName, _ in pairs(fruitCheckboxState) do
-	createFruitEspCheckbox(fruitName)
-end
-
-
--- =================================================================
--- === SCRIPT FUNCTIONALITY SECTION ================================
--- This section contains all the game logic, event handling,
--- and functions that make the UI interactive.
--- =================================================================
 
 -- DRAGGING FUNCTIONALITY FOR MENU 1
 local isDragging1 = false
@@ -754,6 +206,294 @@ task.spawn(function()
 	end
 end)
 
+-- =================================================================
+-- === Player & NPC ESP Menu (Menu 2) ==============================
+-- =================================================================
+
+-- SETUP UI ELEMENTS FOR MENU 2
+local screenGui2 = Instance.new("ScreenGui")
+screenGui2.Name = "PlayerESPMenu"
+screenGui2.ResetOnSpawn = false
+screenGui2.Parent = PlayerGui
+
+local mainFrame2 = Instance.new("Frame")
+mainFrame2.Name = "MainFrame"
+mainFrame2.Size = UI_SIZE
+mainFrame2.Position = UDim2.new(0.5, -150, 0.5, 100)
+mainFrame2.BackgroundColor3 = PRIMARY_COLOR
+mainFrame2.BorderSizePixel = 0
+mainFrame2.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame2.ClipsDescendants = true
+mainFrame2.Parent = screenGui2
+
+local corner2 = Instance.new("UICorner")
+corner2.CornerRadius = UDim.new(0, 8)
+corner2.Parent = mainFrame2
+
+local stroke2 = Instance.new("UIStroke")
+stroke2.Color = Color3.fromRGB(60, 60, 60)
+stroke2.Thickness = 1.5
+stroke2.Parent = mainFrame2
+
+local gradient2 = Instance.new("UIGradient")
+gradient2.Color = ColorSequence.new(
+	Color3.fromRGB(60, 60, 60),
+	Color3.fromRGB(45, 45, 45)
+)
+gradient2.Rotation = 90
+gradient2.Parent = mainFrame2
+
+local titleBar2 = Instance.new("Frame")
+titleBar2.Name = "TitleBar"
+titleBar2.Size = UDim2.new(1, 0, 0, 40)
+titleBar2.BackgroundColor3 = HEADER_COLOR
+titleBar2.BorderSizePixel = 0
+titleBar2.Parent = mainFrame2
+
+local titleBarCorner2 = Instance.new("UICorner")
+titleBarCorner2.CornerRadius = UDim.new(0, 8)
+titleBarCorner2.Parent = titleBar2
+
+local titleLabel2 = Instance.new("TextLabel")
+titleLabel2.Name = "TitleLabel"
+titleLabel2.Size = UDim2.new(1, -70, 1, 0)
+titleLabel2.Position = UDim2.new(0, 5, 0, 0)
+titleLabel2.BackgroundTransparency = 1
+titleLabel2.TextColor3 = SECONDARY_ACCENT_COLOR
+titleLabel2.TextScaled = true
+titleLabel2.Font = TITLE_FONT
+titleLabel2.Text = "Player & NPC ESP Menu"
+titleLabel2.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel2.Parent = titleBar2
+
+local minimizeButton2 = Instance.new("TextButton")
+minimizeButton2.Name = "MinimizeButton"
+minimizeButton2.Size = UDim2.new(0, 30, 1, -5)
+minimizeButton2.Position = UDim2.new(1, -65, 0, 2)
+minimizeButton2.BackgroundColor3 = PRIMARY_COLOR
+minimizeButton2.BorderSizePixel = 0
+minimizeButton2.Text = "-"
+minimizeButton2.TextColor3 = TEXT_COLOR
+minimizeButton2.TextSize = 25
+minimizeButton2.Font = TITLE_FONT
+minimizeButton2.Parent = titleBar2
+
+local nukeButton2 = Instance.new("TextButton")
+nukeButton2.Name = "NukeButton"
+nukeButton2.Size = UDim2.new(0, 30, 1, -5)
+nukeButton2.Position = UDim2.new(1, -32, 0, 2)
+nukeButton2.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+nukeButton2.BorderSizePixel = 0
+nukeButton2.Text = "X"
+nukeButton2.TextColor3 = TEXT_COLOR
+nukeButton2.TextSize = 20
+nukeButton2.Font = TITLE_FONT
+nukeButton2.Parent = titleBar2
+
+-- Player ESP Section
+local playerEspLabel = Instance.new("TextLabel")
+playerEspLabel.Name = "PlayerEspLabel"
+playerEspLabel.Text = "Player ESP Options"
+playerEspLabel.Size = UDim2.new(1, -20, 0, 25)
+playerEspLabel.Position = UDim2.new(0, 10, 0, 50)
+playerEspLabel.BackgroundTransparency = 1
+playerEspLabel.TextColor3 = SECONDARY_ACCENT_COLOR
+playerEspLabel.TextScaled = true
+playerEspLabel.Font = TITLE_FONT
+playerEspLabel.TextXAlignment = Enum.TextXAlignment.Left
+playerEspLabel.Parent = mainFrame2
+
+local playerEspButtonsContainer = Instance.new("Frame")
+playerEspButtonsContainer.Name = "PlayerEspButtonsContainer"
+playerEspButtonsContainer.Size = UDim2.new(1, -20, 0.35, 0)
+playerEspButtonsContainer.Position = UDim2.new(0, 10, 0, 80)
+playerEspButtonsContainer.BackgroundTransparency = 1
+playerEspButtonsContainer.Parent = mainFrame2
+
+local playerListLayout = Instance.new("UIListLayout")
+playerListLayout.Padding = UDim.new(0, 5)
+playerListLayout.FillDirection = Enum.FillDirection.Vertical
+playerListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+playerListLayout.Parent = playerEspButtonsContainer
+
+local playerEspTypes = {
+	["Username ESP"] = false,
+	["Distance ESP"] = false,
+	["Player Tracing"] = false,
+}
+
+local playerCheckboxState = {
+	["Username ESP"] = false,
+	["Distance ESP"] = false,
+	["Player Tracing"] = false,
+}
+
+local function createPlayerEspCheckbox(espName)
+	local button = Instance.new("TextButton")
+	button.Name = espName .. "Checkbox"
+	button.Size = UDim2.new(1, 0, 0, 30)
+	button.BackgroundTransparency = 1
+	button.BorderSizePixel = 0
+	button.Text = ""
+	button.Parent = playerEspButtonsContainer
+
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 5)
+	buttonCorner.Parent = button
+
+	local checkboxBox = Instance.new("Frame")
+	checkboxBox.Name = "CheckboxBox"
+	checkboxBox.Size = UDim2.new(0, 20, 0, 20)
+	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)
+	checkboxBox.BackgroundColor3 = PRIMARY_COLOR
+	checkboxBox.BorderSizePixel = 1
+	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+	checkboxBox.Parent = button
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 5)
+	boxCorner.Parent = checkboxBox
+
+	local checkboxIcon = Instance.new("ImageLabel")
+	checkboxIcon.Name = "Checkmark"
+	checkboxIcon.BackgroundTransparency = 1
+	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)
+	checkboxIcon.Image = "rbxassetid://603417770"
+	checkboxIcon.ImageColor3 = PLAYER_ACCENT_COLOR
+	checkboxIcon.Visible = false
+	checkboxIcon.Parent = checkboxBox
+
+	local espLabel = Instance.new("TextLabel")
+	espLabel.Name = "EspNameLabel"
+	espLabel.Size = UDim2.new(1, -30, 1, 0)
+	espLabel.Position = UDim2.new(0, 30, 0, 0)
+	espLabel.BackgroundTransparency = 1
+	espLabel.TextColor3 = TEXT_COLOR
+	espLabel.Text = espName
+	espLabel.TextScaled = true
+	espLabel.Font = TITLE_FONT
+	espLabel.TextXAlignment = Enum.TextXAlignment.Left
+	espLabel.Parent = button
+
+	button.MouseButton1Click:Connect(function()
+		local newState = not playerCheckboxState[espName]
+		playerCheckboxState[espName] = newState
+
+		if newState then
+			checkboxIcon.Visible = true
+			checkboxBox.BackgroundColor3 = PLAYER_ACCENT_COLOR
+		else
+			checkboxIcon.Visible = false
+			checkboxBox.BackgroundColor3 = PRIMARY_COLOR
+		end
+	end)
+end
+
+for espName, _ in pairs(playerEspTypes) do
+	createPlayerEspCheckbox(espName)
+end
+
+-- NPC ESP Section
+local npcEspLabel = Instance.new("TextLabel")
+npcEspLabel.Name = "NpcEspLabel"
+npcEspLabel.Text = "NPC ESP Options"
+npcEspLabel.Size = UDim2.new(1, -20, 0, 25)
+npcEspLabel.Position = UDim2.new(0, 10, 0, 180)
+npcEspLabel.BackgroundTransparency = 1
+npcEspLabel.TextColor3 = ACCENT_COLOR
+npcEspLabel.TextScaled = true
+npcEspLabel.Font = TITLE_FONT
+npcEspLabel.TextXAlignment = Enum.TextXAlignment.Left
+npcEspLabel.Parent = mainFrame2
+
+local npcEspButtonsContainer = Instance.new("Frame")
+npcEspButtonsContainer.Name = "NpcEspButtonsContainer"
+npcEspButtonsContainer.Size = UDim2.new(1, -20, 0.45, 0)
+npcEspButtonsContainer.Position = UDim2.new(0, 10, 0, 210)
+npcEspButtonsContainer.BackgroundTransparency = 1
+npcEspButtonsContainer.Parent = mainFrame2
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 5)
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.Parent = npcEspButtonsContainer
+
+local npcTypes = {
+	["Set Home Point"] = false,
+	["Boat Dealer"] = false,
+}
+
+local npcCheckboxState = {
+	["Set Home Point"] = false,
+	["Boat Dealer"] = false,
+}
+
+local function createNpcEspCheckbox(npcName)
+	local button = Instance.new("TextButton")
+	button.Name = npcName .. "Checkbox"
+	button.Size = UDim2.new(1, 0, 0, 30)
+	button.BackgroundTransparency = 1
+	button.BorderSizePixel = 0
+	button.Text = ""
+	button.Parent = npcEspButtonsContainer
+
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 5)
+	buttonCorner.Parent = button
+
+	local checkboxBox = Instance.new("Frame")
+	checkboxBox.Name = "CheckboxBox"
+	checkboxBox.Size = UDim2.new(0, 20, 0, 20)
+	checkboxBox.Position = UDim2.new(0, 5, 0.5, -10)
+	checkboxBox.BackgroundColor3 = PRIMARY_COLOR
+	checkboxBox.BorderSizePixel = 1
+	checkboxBox.BorderColor3 = Color3.fromRGB(60, 60, 60)
+	checkboxBox.Parent = button
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 5)
+	boxCorner.Parent = checkboxBox
+
+	local checkboxIcon = Instance.new("ImageLabel")
+	checkboxIcon.Name = "Checkmark"
+	checkboxIcon.BackgroundTransparency = 1
+	checkboxIcon.Size = UDim2.new(1, 0, 1, 0)
+	checkboxIcon.Image = "rbxassetid://603417770"
+	checkboxIcon.ImageColor3 = ACCENT_COLOR
+	checkboxIcon.Visible = false
+	checkboxIcon.Parent = checkboxBox
+
+	local npcLabel = Instance.new("TextLabel")
+	npcLabel.Name = "NpcNameLabel"
+	npcLabel.Size = UDim2.new(1, -30, 1, 0)
+	npcLabel.Position = UDim2.new(0, 30, 0, 0)
+	npcLabel.BackgroundTransparency = 1
+	npcLabel.TextColor3 = TEXT_COLOR
+	npcLabel.Text = npcName
+	npcLabel.TextScaled = true
+	npcLabel.Font = TITLE_FONT
+	npcLabel.TextXAlignment = Enum.TextXAlignment.Left
+	npcLabel.Parent = button
+
+	button.MouseButton1Click:Connect(function()
+		local newState = not npcCheckboxState[npcName]
+		npcCheckboxState[npcName] = newState
+
+		if newState then
+			checkboxIcon.Visible = true
+			checkboxBox.BackgroundColor3 = NPC_ACCENT_COLOR
+		else
+			checkboxIcon.Visible = false
+			checkboxBox.BackgroundColor3 = PRIMARY_COLOR
+		end
+	end)
+end
+
+for npcName, _ in pairs(npcTypes) do
+	createNpcEspCheckbox(npcName)
+end
+
 -- DRAGGING FUNCTIONALITY FOR MENU 2
 local isDragging2 = false
 local dragStartPos2 = Vector2.new(0, 0)
@@ -810,67 +550,11 @@ minimizeButton2.MouseButton1Click:Connect(function()
 	end
 end)
 
--- DRAGGING FUNCTIONALITY FOR MENU 3
-local isDragging3 = false
-local dragStartPos3 = Vector2.new(0, 0)
-local dragStartFramePosition3 = UDim2.new(0, 0, 0, 0)
-
-titleBar3.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging3 = true
-		dragStartPos3 = input.Position
-		dragStartFramePosition3 = mainFrame3.Position
-		UserInputService.MouseIconEnabled = false
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging3 = false
-		UserInputService.MouseIconEnabled = true
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if isDragging3 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStartPos3
-		local newPosition = dragStartFramePosition3 + UDim2.new(0, delta.X, 0, delta.Y)
-		mainFrame3.Position = newPosition
-	end
-end)
-
--- BUTTON FUNCTIONALITY FOR MENU 3
-local isMinimized3 = false
-minimizeButton3.MouseButton1Click:Connect(function()
-	isMinimized3 = not isMinimized3
-
-	local targetSize
-	if isMinimized3 then
-		targetSize = MINIMIZED_SIZE
-	else
-		targetSize = UI_SIZE
-	end
-	local targetClipsDescendants = not isMinimized3
-
-	local tween = TweenService:Create(mainFrame3, tweenInfo, {Size = targetSize})
-	tween:Play()
-
-	task.delay(0.2, function()
-		mainFrame3.ClipsDescendants = targetClipsDescendants
-	end)
-
-	if isMinimized3 then
-		minimizeButton3.Text = "+"
-	else
-		minimizeButton3.Text = "-"
-	end
-end)
-
 -- ESP FUNCTIONALITY
 local playerLabels = {}
 local npcLabels = {}
 local playerTracers = {}
-local npcsFolder = ReplicatedStorage:WaitForChild("NPCs")
+local npcsFolder = Workspace:WaitForChild("NPCs")
 
 -- PLAYER ESP FUNCTIONS
 local function createPlayerLabel()
@@ -1024,59 +708,52 @@ local function removeAllPlayerTracers()
 end
 
 -- NPC ESP FUNCTIONS
-local function createNpcListItem(npcName)
+local function createNpcLabel(npcName)
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(1, 0, 0, 20)
+	label.Size = UDim2.new(0, 100, 0, 20)
 	label.TextColor3 = NPC_ACCENT_COLOR
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	label.TextStrokeTransparency = 0
-	label.Text = npcName
-	label.Name = npcName .. "ListItem"
 	label.TextScaled = true
 	label.Font = Enum.Font.SourceSansBold
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.Parent = scrollingFrame
+	label.Text = npcName
+	label.Name = npcName .. "ESPLabel"
+	label.ZIndex = 10
+	label.Parent = screenGui2
 	return label
 end
 
 local function updateNpcLabels()
-	-- Clear all old labels
-	for _, label in pairs(npcLabels) do
-		label:Destroy()
-	end
-	npcLabels = {}
-
-	-- Check for NPCs in Workspace for "Set Home Point"
-	if npcCheckboxState["Set Home Point"] then
-		for _, npc in ipairs(Workspace:GetChildren()) do
-			if npc:IsA("Model") and npc.Name == "Set Home Point" and npc:FindFirstChild("HumanoidRootPart") then
-				local rootPart = npc.HumanoidRootPart
-				local distance = (myRootPart.Position - rootPart.Position).Magnitude
-				if distance <= NPC_ESP_DISTANCE then
-					local label = createPlayerLabel() -- Reuse player label creation function
-					label.TextColor3 = ACCENT_COLOR
-					label.Name = "SetHomePointLabel"
-					label.Text = "Set Home Point: " .. math.floor(distance) .. "m"
-					label.Size = UDim2.new(0, 200, 0, 20)
-					npcLabels[npc] = label
+	local existingNpcs = {}
+	for _, npc in ipairs(npcsFolder:GetChildren()) do
+		if npc:IsA("Model") and npc.Name and npcCheckboxState[npc.Name] and npc:FindFirstChild("HumanoidRootPart") then
+			local rootPart = npc.HumanoidRootPart
+			local distance = (myRootPart.Position - rootPart.Position).Magnitude
+			if distance <= NPC_ESP_DISTANCE then
+				existingNpcs[npc] = true
+				if not npcLabels[npc] then
+					npcLabels[npc] = createNpcLabel(npc.Name)
+				end
+				
+				local label = npcLabels[npc]
+				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))
+				if onScreen then
+					label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)
+					label.Visible = true
+				else
+					label.Visible = false
 				end
 			end
 		end
 	end
 
-	-- Check for NPCs in ReplicatedStorage for "Boat Dealer"
-	if npcCheckboxState["Boat Dealer"] then
-		local numNpcsFound = 0
-		for _, npc in ipairs(npcsFolder:GetChildren()) do
-			if npc:IsA("Model") and npc.Name == "Boat Dealer" then
-				local label = createNpcListItem(npc.Name)
-				label.Parent = scrollingFrame
-				npcLabels[npc] = label
-				numNpcsFound += 1
-			end
+	-- Clean up labels for NPCs that are no longer in range or removed
+	for npc, label in pairs(npcLabels) do
+		if not existingNpcs[npc] then
+			label:Destroy()
+			npcLabels[npc] = nil
 		end
-		scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, numNpcsFound * 25)
 	end
 end
 
@@ -1088,168 +765,6 @@ local function removeAllNpcLabels()
 	end
 	npcLabels = {}
 end
-
--- FRUIT TELEPORT FUNCTION
-local isTeleporting = false
-local function teleportToFruit()
-	if isTeleporting then return end
-	
-	local foundFruit = false
-	-- Find the first fruit at the top level of the workspace
-	for _, child in ipairs(Workspace:GetChildren()) do
-		if (child:IsA("Model") or child:IsA("Tool")) and child.Name == "Fruit" then
-			local fruitPosition
-			-- Try to get position from a `Part` or `PrimaryPart`
-			if child:IsA("Model") and child.PrimaryPart then
-				fruitPosition = child.PrimaryPart.Position
-			elseif child:IsA("Tool") and child:FindFirstChildOfClass("Part") then
-				fruitPosition = child:FindFirstChildOfClass("Part").Position
-			elseif child:IsA("Part") then
-				fruitPosition = child.Position
-			end
-			
-			if fruitPosition then
-				-- We found a fruit, now we can teleport.
-				isTeleporting = true
-				
-				local targetCFrame = CFrame.new(fruitPosition)
-				local tweenInfo = TweenInfo.new(0.2) -- A duration of 0.2 seconds is fast but smooth
-				
-				local tween = TweenService:Create(myRootPart, tweenInfo, {CFrame = targetCFrame})
-				tween:Play()
-				
-				tween.Completed:Wait()
-				
-				isTeleporting = false
-				foundFruit = true
-				break
-			end
-		end
-	end
-	
-	if not foundFruit and not isMinimized3 then
-		-- Optional: Display a message if no fruit is found
-		-- You could add a temporary textlabel to the UI here if needed
-	end
-end
-
-local function updateAllCheckboxes()
-	-- Update Player Checkboxes
-	for name, state in pairs(playerCheckboxState) do
-		local checkbox = playerCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = PLAYER_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-	-- Update NPC Checkboxes
-	for name, state in pairs(npcCheckboxState) do
-		local checkbox = npcCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = NPC_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-	-- Update Fruit Checkboxes
-	for name, state in pairs(fruitCheckboxState) do
-		local checkbox = fruitCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = FRUIT_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-	
-	-- Manually trigger NPC label update to reflect new state
-	updateNpcLabels()
-end
-
--- DATASTORE FUNCTIONS
-local function SaveSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, {
-			playerSettings = playerCheckboxState,
-			npcSettings = npcCheckboxState,
-			fruitSettings = fruitCheckboxState
-		})
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Saved!"
-		statusLabel.TextColor3 = SECONDARY_ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to save!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to save settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function LoadSettings()
-	local success, data = pcall(function()
-		return settingsDataStore:GetAsync(player.UserId)
-	end)
-	if success and data then
-		for k, v in pairs(data.playerSettings) do
-			if playerCheckboxState[k] ~= nil then
-				playerCheckboxState[k] = v
-			end
-		end
-		for k, v in pairs(data.npcSettings) do
-			if npcCheckboxState[k] ~= nil then
-				npcCheckboxState[k] = v
-			end
-		end
-		for k, v in pairs(data.fruitSettings) do
-			if fruitCheckboxState[k] ~= nil then
-				fruitCheckboxState[k] = v
-			end
-		end
-		updateAllCheckboxes()
-		statusLabel.Text = "Settings status: Loaded!"
-		statusLabel.TextColor3 = ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: No settings found."
-		statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		warn("Failed to load settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function ClearSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, nil) -- Setting data to nil effectively deletes it
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Cleared!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to clear!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to clear settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-saveButton.MouseButton1Click:Connect(SaveSettings)
-loadButton.MouseButton1Click:Connect(LoadSettings)
-clearButton.MouseButton1Click:Connect(ClearSettings)
 
 -- EVENT HANDLING
 -- We'll manage creation/removal of labels and tracers here instead of in the main loop
@@ -1275,7 +790,6 @@ end)
 
 -- Initialize labels for existing players on startup
 createPlayerLabelsForExistingPlayers()
-LoadSettings() -- Load settings on initial startup
 
 -- Main ESP loop
 RunService.RenderStepped:Connect(function()
@@ -1313,15 +827,10 @@ RunService.RenderStepped:Connect(function()
 			label.Visible = false
 		end
 	end
-
-	-- Fruit Teleport
-	if fruitCheckboxState["Tp to Fruits"] then
-		teleportToFruit()
-	end
 end)
 
 local function checkAndDestroyScript()
-	if not screenGui1.Parent and not screenGui2.Parent and not screenGui3.Parent then
+	if not screenGui1.Parent and not screenGui2.Parent then
 		-- Clean up the tracer container when the menus are closed
 		if TracerContainer then
 			TracerContainer:Destroy()
@@ -1348,10 +857,5 @@ nukeButton2.MouseButton1Click:Connect(function()
 	end
 	
 	screenGui2:Destroy()
-	checkAndDestroyScript()
-end)
-
-nukeButton3.MouseButton1Click:Connect(function()
-	screenGui3:Destroy()
 	checkAndDestroyScript()
 end)
