@@ -5,7 +5,8 @@
 	
 	This version addresses the previous design flaws, providing a much larger,
 	more visually appealing UI with a two-panel tabbed layout and a corrected
-	minimization feature that properly hides all content.
+	minimization feature that properly hides all content, along with a new
+	dynamic notification system.
 ]]
 
 -- SERVICES
@@ -252,31 +253,6 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	return button, checkmark, toggleBox
 end
 
--- Creates and displays a temporary notification message
-local function showNotification(message: string, duration: number?)
-	local msgFrame = screenGui:FindFirstChild("NotificationFrame")
-	if not msgFrame then return end
-	local msgLabel = msgFrame:FindFirstChild("NotificationLabel") :: any
-	
-	if not duration then duration = 2 end
-	
-	-- Stop any ongoing tweens
-	TweenService:Create(msgFrame, TweenInfo.new(0.1), {Position = UDim2.new(0.5, 0, 1, -100)}):Play()
-	
-	msgLabel.Text = message
-	msgFrame.Visible = true
-	
-	-- Fade in and out
-	TweenService:Create(msgFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 1, -80), BackgroundTransparency = 0.2, BorderTransparency = 0.5}):Play()
-	
-	task.wait(duration)
-	
-	TweenService:Create(msgFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, 0, 1, -100), BackgroundTransparency = 1, BorderTransparency = 1}):Play()
-	
-	task.wait(0.5)
-	msgFrame.Visible = false
-end
-
 -- =================================================================
 -- === UI Construction and Logic ===================================
 -- =================================================================
@@ -430,25 +406,41 @@ local function createTabAndContent(name: string, accentColor: Color3, layoutOrde
 	return contentFrame
 end
 
--- Create the notification frame (moved to a higher scope)
+-- Create the notification frame (now a proper UI element)
 local notificationFrame = Instance.new("Frame")
 notificationFrame.Name = "NotificationFrame"
-notificationFrame.Size = UDim2.new(0, 300, 0, 40)
-notificationFrame.Position = UDim2.new(0.5, 0, 1, -100)
-notificationFrame.AnchorPoint = Vector2.new(0.5, 0)
-notificationFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-notificationFrame.BackgroundTransparency = 1
+notificationFrame.Size = UDim2.new(0, 300, 0, 75)
+notificationFrame.Position = UDim2.new(1, -310, 1, -100)
+notificationFrame.AnchorPoint = Vector2.new(1, 1)
+notificationFrame.BackgroundColor3 = FROSTED_BACKGROUND
+notificationFrame.BackgroundTransparency = 0.25
 notificationFrame.BorderSizePixel = 1
 notificationFrame.BorderColor3 = BORDER_COLOR
 notificationFrame.Visible = false
 notificationFrame.Parent = screenGui
+
 local notificationCorner = Instance.new("UICorner")
 notificationCorner.CornerRadius = UDim.new(0, 10)
 notificationCorner.Parent = notificationFrame
+
+local notificationPadding = Instance.new("UIPadding")
+notificationPadding.PaddingTop = UDim.new(0, 5)
+notificationPadding.PaddingBottom = UDim.new(0, 5)
+notificationPadding.PaddingLeft = UDim.new(0, 10)
+notificationPadding.PaddingRight = UDim.new(0, 10)
+notificationPadding.Parent = notificationFrame
+
+local notificationListLayout = Instance.new("UIListLayout")
+notificationListLayout.Padding = UDim.new(0, 2)
+notificationListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+notificationListLayout.FillDirection = Enum.FillDirection.Vertical
+notificationListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notificationListLayout.Parent = notificationFrame
+
 local notificationLabel = Instance.new("TextLabel")
 notificationLabel.Name = "NotificationLabel"
-notificationLabel.Size = UDim2.new(1, -20, 1, 0)
-notificationLabel.Position = UDim2.new(0, 10, 0, 0)
+notificationLabel.LayoutOrder = 1
+notificationLabel.Size = UDim2.new(1, 0, 0, 30)
 notificationLabel.BackgroundTransparency = 1
 notificationLabel.TextColor3 = FONT_COLOR
 notificationLabel.Text = ""
@@ -456,6 +448,79 @@ notificationLabel.TextScaled = true
 notificationLabel.Font = BODY_FONT
 notificationLabel.TextXAlignment = Enum.TextXAlignment.Center
 notificationLabel.Parent = notificationFrame
+
+local timerContainer = Instance.new("Frame")
+timerContainer.Name = "TimerContainer"
+timerContainer.LayoutOrder = 2
+timerContainer.Size = UDim2.new(1, -10, 0, 8)
+timerContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+timerContainer.BorderSizePixel = 1
+timerContainer.BorderColor3 = BORDER_COLOR
+timerContainer.Parent = notificationFrame
+
+local timerBar = Instance.new("Frame")
+timerBar.Name = "TimerBar"
+timerBar.Size = UDim2.new(1, 0, 1, 0)
+timerBar.BackgroundColor3 = FRUIT_ACCENT
+timerBar.BorderSizePixel = 0
+timerBar.Parent = timerContainer
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 20)
+closeButton.LayoutOrder = 3
+closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "OK"
+closeButton.TextColor3 = FONT_COLOR
+closeButton.TextSize = 14
+closeButton.Font = TITLE_FONT
+closeButton.Parent = notificationFrame
+local closeButtonCorner = Instance.new("UICorner")
+closeButtonCorner.CornerRadius = UDim.new(0, 5)
+closeButtonCorner.Parent = closeButton
+
+-- Function to show the dynamic notification
+local currentTween = nil
+local function showNotification(message: string, duration: number?)
+	if currentTween and currentTween.PlaybackState == Enum.PlaybackState.Playing then
+		currentTween:Cancel()
+	end
+	
+	if not duration then duration = 10 end
+	
+	notificationLabel.Text = message
+	notificationFrame.Visible = true
+	timerBar.Size = UDim2.new(1, 0, 1, 0)
+	
+	-- Fade in and slide up
+	local tweenIn = TweenService:Create(notificationFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, -85)})
+	tweenIn:Play()
+	
+	local timerTweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	currentTween = TweenService:Create(timerBar, timerTweenInfo, {Size = UDim2.new(0, 0, 1, 0)})
+	currentTween:Play()
+	
+	local connection = currentTween.Completed:Connect(function()
+		-- Fade out and slide down after completion
+		local tweenOut = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, 10)})
+		tweenOut:Play()
+		tweenOut.Completed:Wait()
+		notificationFrame.Visible = false
+	end)
+
+	local closeButtonConnection = closeButton.MouseButton1Click:Connect(function()
+		if currentTween and currentTween.PlaybackState == Enum.PlaybackState.Playing then
+			currentTween:Cancel()
+		end
+		connection:Disconnect() -- Disconnect the old completed connection
+		local tweenOut = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, 10)})
+		tweenOut:Play()
+		tweenOut.Completed:Wait()
+		notificationFrame.Visible = false
+		closeButtonConnection:Disconnect() -- Clean up this connection too
+	end)
+end
 
 -- Boss Status Tab
 local bossContentFrame = createTabAndContent("Boss Status", BOSS_ACCENT, 1)
@@ -729,7 +794,7 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 		disableFruitFinder()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
-
+		
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
