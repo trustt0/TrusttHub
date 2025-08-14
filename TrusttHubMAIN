@@ -583,6 +583,82 @@ fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
 
+-- Create a slider bar for Tween Speed
+local tweenSpeedFrame = Instance.new("Frame")
+tweenSpeedFrame.Name = "TweenSpeedFrame"
+tweenSpeedFrame.LayoutOrder = 3
+tweenSpeedFrame.Size = UDim2.new(1, -20, 0, 40)
+tweenSpeedFrame.BackgroundColor3 = FROSTED_BACKGROUND
+tweenSpeedFrame.BackgroundTransparency = 0.4
+tweenSpeedFrame.BorderSizePixel = 0
+tweenSpeedFrame.Parent = fruitFinderContentFrame
+
+local tweenSpeedCorner = Instance.new("UICorner")
+tweenSpeedCorner.CornerRadius = UDim.new(0, 8)
+tweenSpeedCorner.Parent = tweenSpeedFrame
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Name = "SpeedLabel"
+speedLabel.Size = UDim2.new(0.5, -5, 1, 0)
+speedLabel.Position = UDim2.new(0, 5, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = FONT_COLOR
+speedLabel.Text = "Tween Speed: " .. TWEEN_SPEED
+speedLabel.TextScaled = true
+speedLabel.Font = BODY_FONT
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = tweenSpeedFrame
+
+local sliderFrame = Instance.new("Frame")
+sliderFrame.Name = "SliderFrame"
+sliderFrame.Size = UDim2.new(0.5, -10, 0, 10)
+sliderFrame.Position = UDim2.new(0.5, 5, 0.5, -5)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+sliderFrame.BorderSizePixel = 1
+sliderFrame.BorderColor3 = BORDER_COLOR
+sliderFrame.Parent = tweenSpeedFrame
+
+local sliderCorner = Instance.new("UICorner")
+sliderCorner.CornerRadius = UDim.new(0, 5)
+sliderCorner.Parent = sliderFrame
+
+local sliderBar = Instance.new("Frame")
+sliderBar.Name = "SliderBar"
+sliderBar.Size = UDim2.new(0, (TWEEN_SPEED - 100) / 400, 1, 0) -- Assumes TWEEN_SPEED is between 100-500
+sliderBar.BackgroundColor3 = FRUIT_ACCENT
+sliderBar.BorderSizePixel = 0
+sliderBar.Parent = sliderFrame
+
+local function updateTweenSpeed(input)
+	local newX = math.clamp(input.Position.X - sliderFrame.AbsolutePosition.X, 0, sliderFrame.AbsoluteSize.X)
+	local newScale = newX / sliderFrame.AbsoluteSize.X
+	sliderBar.Size = UDim2.new(newScale, 0, 1, 0)
+	
+	local minSpeed = 100
+	local maxSpeed = 500
+	local newSpeed = minSpeed + newScale * (maxSpeed - minSpeed)
+	TWEEN_SPEED = newSpeed
+	speedLabel.Text = "Tween Speed: " .. math.floor(TWEEN_SPEED)
+end
+
+local isSliding = false
+sliderFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isSliding = true
+		updateTweenSpeed(input)
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isSliding = false
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateTweenSpeed(input)
+	end
+end)
+
 fruitFinderToggle.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
