@@ -3,8 +3,8 @@
 	A LocalScript to create four cool, modern, draggable, and dynamic UI menus.
 	This script is designed to be placed in StarterPlayerScripts.
 	
-	This version includes all four menus: Boss Status, Player & NPC ESP, Farm Level, and the Fruit Menu.
-	The layout has been corrected in the Player & NPC ESP menu, ensuring titles are above their toggles.
+	This version includes all four menus. The Fruit menu has been completely
+	rewritten to correctly find fruits and tween the player to them, as requested.
 ]]
 
 -- SERVICES
@@ -28,7 +28,7 @@ local SHADOW_COLOR = Color3.fromRGB(0, 0, 0)
 local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
 local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
-local FRUIT_ACCENT = Color3.fromRGB(170, 85, 255) -- Purple (New color for Fruit Menu)
+local FRUIT_ACCENT = Color3.fromRGB(170, 85, 255) -- Purple
 local OTHER_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
 
 local NPC_ESP_DISTANCE = 500
@@ -664,7 +664,7 @@ task.spawn(function()
 end)
 
 -- =================================================================
--- === Menu 4: Fruit Menu ==========================================
+-- === Menu 4: Fruit Finder ========================================
 -- =================================================================
 
 local screenGui4 = Instance.new("ScreenGui")
@@ -673,7 +673,7 @@ screenGui4.ResetOnSpawn = false
 screenGui4.Parent = PlayerGui
 
 local mainFrame4, corner4, stroke4 = createStyledFrame(UI_SIZE, UDim2.new(0.5, 150, 0.5, -100), screenGui4, FROSTED_BACKGROUND, false)
-local titleBar4, minimizeButton4, nukeButton4 = createTitleBar(mainFrame4, "Fruit Menu", FRUIT_ACCENT)
+local titleBar4, minimizeButton4, nukeButton4 = createTitleBar(mainFrame4, "Fruit Finder", FRUIT_ACCENT)
 setupDrag(mainFrame4, titleBar4)
 
 local isMinimized4 = false
@@ -686,13 +686,15 @@ minimizeButton4.MouseButton1Click:Connect(function()
 	minimizeButton4.Text = if isMinimized4 then "+" else "-"
 end)
 
--- Fruit ESP Toggle
-local fruitEspToggle, fruitEspCheckmark, fruitEspToggleBox = createToggleButton(mainFrame4, "Fruit ESP", FRUIT_ACCENT, false, 1)
-local isFruitEspActive = false
-fruitEspToggle.MouseButton1Click:Connect(function()
-	isFruitEspActive = not isFruitEspActive
-	fruitEspCheckmark.Visible = isFruitEspActive
-	TweenService:Create(fruitEspToggleBox, tweenInfo, {BackgroundColor3 = if isFruitEspActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+-- Fruit Finder Toggle
+local fruitFinderToggle, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(mainFrame4, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
+local isFruitFinderActive = false
+local tweeningToFruit = false
+
+fruitFinderToggle.MouseButton1Click:Connect(function()
+	isFruitFinderActive = not isFruitFinderActive
+	fruitFinderCheckmark.Visible = isFruitFinderActive
+	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
 local fruitStatusLabel = Instance.new("TextLabel")
@@ -703,69 +705,76 @@ fruitStatusLabel.BackgroundTransparency = 1
 fruitStatusLabel.TextColor3 = FONT_COLOR
 fruitStatusLabel.TextScaled = true
 fruitStatusLabel.Font = TITLE_FONT
-fruitStatusLabel.Text = "Checking for fruits..."
+fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = mainFrame4
 
--- Fruit ESP logic (simplified for demonstration)
-local fruitLabels = {}
-local fruitFolder = Workspace:FindFirstChild("Fruits")
-
-local function createFruitLabel(fruitPart)
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(0, 150, 0, 20)
-	label.TextColor3 = FRUIT_ACCENT
-	label.TextStrokeColor3 = Color3.new(0, 0, 0)
-	label.TextStrokeTransparency = 0.5
-	label.TextScaled = true
-	label.Font = Enum.Font.SourceSansBold
-	label.ZIndex = 10
-	label.Parent = screenGui4
-	label.Text = "Fruit Found: " .. fruitPart.Name
-	return label
-end
-
-local function updateFruitESP()
-	if not fruitFolder then
-		fruitStatusLabel.Text = "Fruit folder not found!"
-		return
-	end
-
-	local foundFruits = {}
-	for _, part in ipairs(fruitFolder:GetChildren()) do
-		if part:IsA("Part") then
-			foundFruits[part] = true
-			if not fruitLabels[part] then
-				fruitLabels[part] = createFruitLabel(part)
+local function findNearestFruit()
+	local nearestFruit = nil
+	local nearestDistance = math.huge
+	
+	for _, child in ipairs(Workspace:GetChildren()) do
+		-- Check if the instance is a Model or Tool and has "Fruit" in its name
+		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit", 1, true) then
+			-- Find the primary part or a part named "Handle" to get its position
+			local fruitPosition = nil
+			if child:IsA("Model") and child.PrimaryPart then
+				fruitPosition = child.PrimaryPart.Position
+			elseif child:IsA("Tool") and child:FindFirstChild("Handle") then
+				fruitPosition = child.Handle.Position
 			end
-
-			local label = fruitLabels[part]
-			local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(part.Position)
-			if onScreen then
-				label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)
-				label.Visible = true
-			else
-				label.Visible = false
+			
+			if fruitPosition and myRootPart then
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				if distance < nearestDistance then
+					nearestDistance = distance
+					nearestFruit = child
+				end
 			end
-		end
-	end
-
-	for part, label in pairs(fruitLabels) do
-		if not foundFruits[part] then
-			label:Destroy()
-			fruitLabels[part] = nil
 		end
 	end
 	
-	if next(foundFruits) then
-		fruitStatusLabel.Text = "Fruits have spawned!"
-		fruitStatusLabel.TextColor3 = FRUIT_ACCENT
-	else
-		fruitStatusLabel.Text = "No fruits have spawned"
-		fruitStatusLabel.TextColor3 = FONT_COLOR
-	end
+	return nearestFruit
 end
+
+task.spawn(function()
+	while task.wait(1) do
+		if not screenGui4.Parent then break end
+		if isFruitFinderActive and not tweeningToFruit then
+			local nearestFruit = findNearestFruit()
+			if nearestFruit then
+				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
+				
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				local tweenTime = distance / 200 -- Speed is 200 studs per second
+				
+				if tweenTime > 0.1 then -- Only tween if we're not right next to it
+					tweeningToFruit = true
+					fruitStatusLabel.Text = "Fruit found! Tweening to location."
+					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+					
+					local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+					local tweenProperties = {CFrame = CFrame.new(fruitPosition)}
+					
+					local tween = TweenService:Create(myRootPart, tweenInfo, tweenProperties)
+					tween:Play()
+					
+					tween.Completed:Wait()
+					tweeningToFruit = false
+					fruitStatusLabel.Text = "Fruit finder is ready."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				end
+			else
+				fruitStatusLabel.Text = "Searching for fruits..."
+				fruitStatusLabel.TextColor3 = FONT_COLOR
+			end
+		elseif not isFruitFinderActive then
+			fruitStatusLabel.Text = "Fruit finder is off."
+			fruitStatusLabel.TextColor3 = FONT_COLOR
+		end
+	end
+end)
+
 
 -- =================================================================
 -- === Event Handling & Cleanup ====================================
@@ -790,7 +799,6 @@ RunService.RenderStepped:Connect(function()
 	if isPlayerLabelEspActive then updatePlayerLabels() else for _, label in pairs(playerLabels) do label.Visible = false end end
 	if isTracingActive then updatePlayerTracers() else for _, tracer in pairs(playerTracers) do tracer.Transparency = 1 end end
 	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end
-	if isFruitEspActive then updateFruitESP() else for _, label in pairs(fruitLabels) do label.Visible = false end end
 end)
 
 local function checkAndDestroyScript()
