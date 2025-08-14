@@ -4,7 +4,8 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version includes the full UI, with a two-panel tabbed layout and a corrected
-	minimization feature. The notification system has been removed as requested.
+	minimization feature. The notification system has been completely removed
+	and the "Tween to Fruits" button now includes a note about its prerequisite.
 ]]
 
 -- SERVICES
@@ -685,7 +686,7 @@ end)
 
 tweenToFruitToggle.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then
-		-- No notification needed, the button text now indicates the prerequisite.
+		-- The button text now indicates the prerequisite. No notification needed.
 		return
 	end
 	isTweenToFruitActive = not isTweenToFruitActive
