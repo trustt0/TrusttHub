@@ -659,12 +659,12 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 end)
 
 -- Add a new toggle to choose between Instant Teleport and Smooth Move
-local smoothMoveToggle, smoothMoveCheckmark, smoothMoveToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
-local isSmoothMoveActive = false
-smoothMoveToggle.MouseButton1Click:Connect(function()
-	isSmoothMoveActive = not isSmoothMoveActive
-	smoothMoveCheckmark.Visible = isSmoothMoveActive
-	TweenService:Create(smoothMoveToggleBox, tweenInfo, {BackgroundColor3 = if isSmoothMoveActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
+local isTweenToFruitActive = false
+tweenToFruitToggle.MouseButton1Click:Connect(function()
+	isTweenToFruitActive = not isTweenToFruitActive
+	tweenToFruitCheckmark.Visible = isTweenToFruitActive
+	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isTweenToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
 
@@ -757,7 +757,7 @@ local function enableFruitFinderV2()
 			if nearestFruitPart then
 				isTeleporting = true
 				
-				if isSmoothMoveActive then
+				if isTweenToFruitActive then
 					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
 					local tweenTime = distance / TWEEN_SPEED
 					
