@@ -680,6 +680,9 @@ local function findNearestFruit()
 			local fruitPosition = nil
 			if child:IsA("Model") and child.PrimaryPart then
 				fruitPosition = child.PrimaryPart.Position
+			elseif child:IsA("Tool") and child:FindFirstChild("Fruit") and child.Fruit:FindFirstChild("PrimaryPart") then
+				-- Modified to check for a child model named "Fruit" and use its PrimaryPart
+				fruitPosition = child.Fruit.PrimaryPart.Position
 			elseif child:IsA("Tool") and child:FindFirstChild("Handle") then
 				fruitPosition = child.Handle.Position
 			end
@@ -703,27 +706,36 @@ task.spawn(function()
 		if activeTabName == "Fruit Finder" and isFruitFinderActive and not tweeningToFruit and myRootPart then
 			local nearestFruit = findNearestFruit()
 			if nearestFruit then
-				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
+				local fruitPosition = nil
+				if nearestFruit:IsA("Model") then
+					fruitPosition = nearestFruit.PrimaryPart.Position
+				elseif nearestFruit:IsA("Tool") and nearestFruit:FindFirstChild("Fruit") and nearestFruit.Fruit:FindFirstChild("PrimaryPart") then
+					-- Modified to use the new logic for tools
+					fruitPosition = nearestFruit.Fruit.PrimaryPart.Position
+				elseif nearestFruit:IsA("Tool") and nearestFruit:FindFirstChild("Handle") then
+					fruitPosition = nearestFruit.Handle.Position
+				end
 				
-				local distance = (myRootPart.Position - fruitPosition).Magnitude
-				local tweenTime = distance / TWEEN_SPEED
-				
-				if distance > 20 then
-					tweeningToFruit = true
-					fruitStatusLabel.Text = "Fruit found! Tweening to location."
-					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+				if fruitPosition then
+					local distance = (myRootPart.Position - fruitPosition).Magnitude
+					local tweenTime = distance / TWEEN_SPEED
 					
-					-- Fix: use the calculated tweenTime here instead of the constant tweenInfo
-					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(fruitPosition)})
-					tween:Play()
-					
-					tween.Completed:Wait()
-					tweeningToFruit = false
-					fruitStatusLabel.Text = "Fruit finder is ready."
-					fruitStatusLabel.TextColor3 = FONT_COLOR
-				else
-					fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
-					fruitStatusLabel.TextColor3 = FONT_COLOR
+					if distance > 20 then
+						tweeningToFruit = true
+						fruitStatusLabel.Text = "Fruit found! Tweening to location."
+						fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+						
+						local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(fruitPosition)})
+						tween:Play()
+						
+						tween.Completed:Wait()
+						tweeningToFruit = false
+						fruitStatusLabel.Text = "Fruit finder is ready."
+						fruitStatusLabel.TextColor3 = FONT_COLOR
+					else
+						fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
+						fruitStatusLabel.TextColor3 = FONT_COLOR
+					end
 				end
 			else
 				fruitStatusLabel.Text = "Searching for fruits..."
@@ -827,7 +839,7 @@ local function updatePlayerTracer(tracer, targetPart, myRootPart)
 	local distance = (startPos - endPos).Magnitude
 	local middle = startPos:Lerp(endPos, 0.5)
 	local tracerCFrame = CFrame.new(middle, endPos)
-	tracerCFrame = tracerCFrame * CFrame.Angles(math.pi / 2, 0, 0)
+	tracerCFrame = tracerCframe * CFrame.Angles(math.pi / 2, 0, 0)
 	tracer.CFrame = tracerCFrame
 	local mesh = tracer:FindFirstChildOfClass("CylinderMesh")
 	if mesh then mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS) end
