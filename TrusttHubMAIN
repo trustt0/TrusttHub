@@ -655,7 +655,7 @@ questionMarkContainer.MouseLeave:Connect(function()
 	tooltip.Visible = false
 end)
 
-
+-- Function to find the nearest fruit part
 local function findNearestFruitPart()
 	local nearestPart = nil
 	local nearestDistance = math.huge
@@ -683,6 +683,7 @@ local function findNearestFruitPart()
 	return nearestPart
 end
 
+-- This is the core loop that runs when Fruit Finder is enabled.
 local fruitFinderConnection = nil
 local function enableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
@@ -690,11 +691,13 @@ local function enableFruitFinder()
 		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if not myRootPart or not isFruitFinderActive then return end
 		
+		-- Only proceed if we aren't already teleporting
 		if not isTeleporting then
 			local nearestFruitPart = findNearestFruitPart()
 			if nearestFruitPart then
 				isTeleporting = true
 				
+				-- Check which sub-option is enabled
 				if isTweenToFruitActive then
 					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
 					local tweenTime = distance / TWEEN_SPEED
@@ -713,17 +716,20 @@ local function enableFruitFinder()
 					
 					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
 					
-					task.wait() -- Wait one frame
+					task.wait() -- Wait one frame for the CFrame to update
 					isTeleporting = false
 				else
-					isTeleporting = false -- Reset if no option is active
+					-- If Fruit Finder is active but no sub-option is, just reset and don't teleport
+					isTeleporting = false
+					fruitStatusLabel.Text = "Searching for fruits..."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
 				end
-				
+
+				-- After a successful action, update the status label
 				if isInstantTpActive or isTweenToFruitActive then
 					fruitStatusLabel.Text = "Fruit finder is ready."
 					fruitStatusLabel.TextColor3 = FONT_COLOR
 				end
-
 			else
 				fruitStatusLabel.Text = "Searching for fruits..."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
@@ -732,12 +738,14 @@ local function enableFruitFinder()
 	end)
 end
 
+-- Function to disable the fruit finder and reset all states
 local function disableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = nil
 	isTeleporting = false
 end
 
+-- Main "Enable Fruit Finder" toggle
 fruitFinderButton.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
@@ -750,6 +758,7 @@ fruitFinderButton.MouseButton1Click:Connect(function()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
 		
+		-- Explicitly disable the sub-options and their visuals
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
@@ -760,38 +769,38 @@ fruitFinderButton.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- "Tween to Fruits" button, mutually exclusive with Instant Teleport
 tweenToFruitButton.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then return end
 	
-	local newState = not isTweenToFruitActive
+	isTweenToFruitActive = not isTweenToFruitActive
 	
-	if newState then
+	if isTweenToFruitActive then
 		-- If enabling Tween, disable Instant TP
 		isInstantTpActive = false
 		instantTpCheckmark.Visible = false
 		TweenService:Create(instantTpToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 	end
 	
-	isTweenToFruitActive = newState
-	tweenToFruitCheckmark.Visible = newState
-	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = if newState then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+	tweenToFruitCheckmark.Visible = isTweenToFruitActive
+	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isTweenToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
+-- "Instant Teleport" button, mutually exclusive with Tween to Fruits
 instantTpButton.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then return end
 
-	local newState = not isInstantTpActive
+	isInstantTpActive = not isInstantTpActive
 	
-	if newState then
+	if isInstantTpActive then
 		-- If enabling Instant TP, disable Tween
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 	end
 	
-	isInstantTpActive = newState
-	instantTpCheckmark.Visible = newState
-	TweenService:Create(instantTpToggleBox, tweenInfo, {BackgroundColor3 = if newState then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+	instantTpCheckmark.Visible = isInstantTpActive
+	TweenService:Create(instantTpToggleBox, tweenInfo, {BackgroundColor3 = if isInstantTpActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
 local tweenSpeedFrame = Instance.new("Frame")
