@@ -1,95 +1,12 @@
 --!strict
 --[[
-	This is a single-file loader script.
-	
-	You can put this entire script into one file on your GitHub,
-	and it will automatically create and set up the necessary
-	Server Script and Module Script in the game.
-	
-	It does this by creating new Script and ModuleScript instances
-	and setting their Source property. This allows all three
-	scripts (one local, one server, one module) to run correctly,
-	even though they all originated from this single file.
-]]
-
--- SERVICES
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-local Players = game:GetService("Players")
-
-local player = Players.LocalPlayer
-
--- =========================================================================================
--- STEP 1: DEFINE THE SERVER-SIDE SCRIPT CODE
--- This code will be run on the server to check for the boss.
--- =========================================================================================
-local serverBossMonitorCode = [[
---!strict
---[[
-	This is a Server Script created by the loader.
-	It monitors the status of the "Saw" boss and updates a shared ModuleScript.
-]]
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-
-local BossStatusModule = ReplicatedStorage:WaitForChild("BossStatusModule")
-local enemiesFolder = Workspace:WaitForChild("Enemies")
-
-while task.wait(1) do
-	local sawBoss = enemiesFolder:FindFirstChild("Saw")
-	if sawBoss and sawBoss:IsA("Model") then
-		BossStatusModule:SetStatus(true)
-	else
-		BossStatusModule:SetStatus(false)
-	end
-end
-]]
-
--- =========================================================================================
--- STEP 2: DEFINE THE MODULE SCRIPT CODE
--- This code will be used by both the server and the client to share data.
--- =========================================================================================
-local bossStatusModuleCode = [[
---!strict
---[[
-	This is a ModuleScript created by the loader.
-	It provides a simple API for the server to update the boss's status
-	and for clients to read that status.
-]]
-
-local BossStatusModule = {}
-
-local bossSpawned = false
-
-function BossStatusModule:SetStatus(status: boolean)
-	bossSpawned = status
-end
-
-function BossStatusModule:GetStatus()
-	return bossSpawned
-end
-
-return BossStatusModule
-]]
-
--- =========================================================================================
--- STEP 3: DEFINE THE LOCAL SCRIPT CODE
--- This is your main UI/ESP script, now with the fix for StreamingEnabled.
--- Note: This is the same as the previous version, but included here for completeness.
--- =========================================================================================
-local mainLocalScriptCode = [[
---!strict
---[[
 	A LocalScript to create two beautiful, draggable, and dynamic UI menus.
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version has been optimized for better performance and
 	addresses the issue of tracers being too big and invisible through objects.
 
-	This is a new version that includes a third menu for teleporting to fruits,
-	and now correctly handles games with StreamingEnabled by reading boss status
-	from a shared ModuleScript.
+	This is a new version that includes a third menu for teleporting to fruits.
 ]]
 
 -- SERVICES
@@ -111,12 +28,12 @@ local NPC_ACCENT_COLOR = Color3.fromRGB(0, 85, 255)
 local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
 local SECONDARY_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)
 local PLAYER_ACCENT_COLOR = Color3.fromRGB(255, 170, 0)
-local FRUIT_ACCENT_COLOR = Color3.fromRGB(255, 0, 0) -- Red color for the Fruit menu
 local NPC_ESP_DISTANCE = 500
+-- NEW CONFIGURATION FOR TRACERS
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
-local TRACER_THICKNESS = 0.2
-local TRACER_TRANSPARENCY = 0.2
-local FRUIT_TELEPORT_SPEED = 200
+local TRACER_THICKNESS = 0.2 -- Adjusted for a smaller size
+local TRACER_TRANSPARENCY = 0.2 -- Changed to make the tracers more visible
+local FRUIT_ACCENT_COLOR = Color3.fromRGB(255, 0, 0) -- Red color for the Fruit menu
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -128,9 +45,6 @@ local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any
 local TracerContainer = Instance.new("Folder")
 TracerContainer.Name = "TracerContainer"
 TracerContainer.Parent = Workspace
-
--- Get the new Boss Status Module
-local BossStatusModule = ReplicatedStorage:WaitForChild("BossStatusModule")
 
 -- =================================================================
 -- === Boss Status Menu (Menu 1) ===================================
@@ -274,14 +188,23 @@ minimizeButton1.MouseButton1Click:Connect(function()
 	end
 end)
 
--- DYNAMIC STATUS CHECK FOR MENU 1 (UPDATED TO USE MODULE)
+-- DYNAMIC STATUS CHECK FOR MENU 1
+local enemiesFolder = Workspace:FindFirstChild("Enemies")
+
+if not enemiesFolder then
+	titleLabel1.Text = "No enemies folder found!"
+end
+
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui1.Parent then break end
-		if BossStatusModule:GetStatus() then
-			titleLabel1.Text = "Bosses spawned!"
-		else
-			titleLabel1.Text = "No bosses spawned"
+		if enemiesFolder then
+			local sawBoss = enemiesFolder:FindFirstChild("Saw")
+			if sawBoss and sawBoss:IsA("Model") then
+				titleLabel1.Text = "Bosses spawned!"
+			else
+				titleLabel1.Text = "No bosses spawned"
+			end
 		end
 	end
 end)
@@ -905,8 +828,8 @@ end
 
 local function updateNpcLabels()
 	local existingNpcs = {}
-	for _, npc in ipairs(Workspace:GetChildren()) do
-		if npc:IsA("Model") and npc.Name and npc.Name == "Saw" and BossStatusModule:GetStatus() and npc:FindFirstChild("HumanoidRootPart") then
+	for _, npc in ipairs(npcsFolder:GetChildren()) do
+		if npc:IsA("Model") and npc.Name and npcCheckboxState[npc.Name] and npc:FindFirstChild("HumanoidRootPart") then
 			local rootPart = npc.HumanoidRootPart
 			local distance = (myRootPart.Position - rootPart.Position).Magnitude
 			if distance <= NPC_ESP_DISTANCE then
@@ -998,10 +921,10 @@ RunService.RenderStepped:Connect(function()
 	end
 
 	-- NPC ESP
-	if BossStatusModule:GetStatus() then
+	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then
 		updateNpcLabels()
 	else
-		-- If boss is not spawned, hide any existing labels
+		-- If NPC ESP is off, hide all labels
 		for _, label in pairs(npcLabels) do
 			label.Visible = false
 		end
@@ -1030,7 +953,7 @@ RunService.RenderStepped:Connect(function()
 		if nearestFruit then
 			local teleportPosition = nearestFruit.Position + Vector3.new(0, 5, 0)
 			local tweenInfo = TweenInfo.new(
-				(myRootPart.Position - teleportPosition).Magnitude / FRUIT_TELEPORT_SPEED,
+				(myRootPart.Position - teleportPosition).Magnitude / 200, -- speed 200
 				Enum.EasingStyle.Linear,
 				Enum.EasingDirection.Out
 			)
@@ -1078,40 +1001,3 @@ nukeButton3.MouseButton1Click:Connect(function()
 	screenGui3:Destroy()
 	checkAndDestroyScript()
 end)
-]]
-
--- =========================================================================================
--- STEP 4: CREATE AND INSERT THE SCRIPTS INTO THE GAME
--- This is the code that actually runs when you execute the loadstring.
--- =========================================================================================
--- Wait for player to exist before doing anything
-if not player then
-	error("Player not found!")
-end
-
-local function setupScripts()
-	-- Create the ModuleScript in ReplicatedStorage
-	local bossStatusModule = Instance.new("ModuleScript")
-	bossStatusModule.Name = "BossStatusModule"
-	bossStatusModule.Source = bossStatusModuleCode
-	bossStatusModule.Parent = ReplicatedStorage
-	
-	-- Create the Server Script in ServerScriptService
-	local serverBossMonitor = Instance.new("Script")
-	serverBossMonitor.Name = "ServerBossMonitor"
-	serverBossMonitor.Source = serverBossMonitorCode
-	serverBossMonitor.Parent = ServerScriptService
-
-	-- Create the main LocalScript in StarterPlayerScripts
-	local mainLocalScript = Instance.new("LocalScript")
-	mainLocalScript.Name = "MainClientScript"
-	mainLocalScript.Source = mainLocalScriptCode
-	mainLocalScript.Parent = player:WaitForChild("PlayerScripts")
-end
-
--- Wait for a bit to ensure the client is ready
-task.spawn(function()
-	task.wait(1)
-	setupScripts()
-end)
-
