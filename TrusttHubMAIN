@@ -707,7 +707,7 @@ task.spawn(function()
 					fruitStatusLabel.Text = "Fruit found! Tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
-					local tween = TweenService:Create(myRootPart, tweenInfo, {CFrame = CFrame.new(fruitPosition)})
+					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(fruitPosition)})
 					tween:Play()
 					
 					tween.Completed:Wait()
