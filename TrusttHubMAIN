@@ -191,8 +191,8 @@ local function createTabButton(parent: Instance, name: string, accentColor: Colo
 	return button
 end
 
--- Creates a toggle button with a clean checkbox style and an optional tooltip
-local function createToggleButton(parent: Instance, text: string, accentColor: Color3, initialActiveState: boolean, layoutOrder: number, tooltipText: string?)
+-- Creates a toggle button with a clean checkbox style
+local function createToggleButton(parent: Instance, text: string, accentColor: Color3, initialActiveState: boolean, layoutOrder: number)
 	local container = Instance.new("Frame")
 	container.Name = "ToggleContainer"
 	container.LayoutOrder = layoutOrder
@@ -247,41 +247,11 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = button
 	
-	-- Create a tooltip if the text is provided
-	if tooltipText then
-		local tooltip = Instance.new("TextLabel")
-		tooltip.Name = "Tooltip"
-		tooltip.Size = UDim2.new(0, 200, 0, 25)
-		tooltip.Position = UDim2.new(0.5, 0, 0, -30) -- Position above the button
-		tooltip.AnchorPoint = Vector2.new(0.5, 1)
-		tooltip.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-		tooltip.BackgroundTransparency = 0
-		tooltip.BorderSizePixel = 0
-		tooltip.TextColor3 = FONT_COLOR
-		tooltip.Text = tooltipText
-		tooltip.TextSize = 14
-		tooltip.Font = BODY_FONT
-		tooltip.Visible = false
-		tooltip.ZIndex = 11
-		tooltip.Parent = container
-
-		local tooltipCorner = Instance.new("UICorner")
-		tooltipCorner.CornerRadius = UDim.new(0, 5)
-		tooltipCorner.Parent = tooltip
-
-		container.MouseEnter:Connect(function()
-			tooltip.Visible = true
-		end)
-		container.MouseLeave:Connect(function()
-			tooltip.Visible = false
-		end)
-	end
-	
 	-- Hover effect
 	container.MouseEnter:Connect(function() TweenService:Create(container, TweenInfo.new(0.2), {BackgroundTransparency = 0.25}):Play() end)
 	container.MouseLeave:Connect(function() TweenService:Create(container, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play() end)
 
-	return button, checkmark, toggleBox
+	return container, button, checkmark, toggleBox
 end
 
 -- =================================================================
@@ -497,7 +467,7 @@ local playerEspTypes = {
 local playerCheckboxState = { ["Username ESP"] = false, ["Distance ESP"] = false, ["Player Tracing"] = false }
 local playerEspLayoutOrder = 2
 local function createPlayerEspCheckbox(espName)
-	local button, checkmark, toggleBox = createToggleButton(espContentFrame, espName, ACCENT_COLOR, false, playerEspLayoutOrder, nil)
+	local container, button, checkmark, toggleBox = createToggleButton(espContentFrame, espName, ACCENT_COLOR, false, playerEspLayoutOrder)
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
 		local newState = not playerCheckboxState[espName]
@@ -527,7 +497,7 @@ local npcTypes = {
 }
 local npcCheckboxState = { ["Set Home Point"] = false, ["Boat Dealer"] = false }
 local function createNpcEspCheckbox(npcName)
-	local button, checkmark, toggleBox = createToggleButton(espContentFrame, npcName, ESP_ACCENT, false, playerEspLayoutOrder, nil)
+	local container, button, checkmark, toggleBox = createToggleButton(espContentFrame, npcName, ESP_ACCENT, false, playerEspLayoutOrder)
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
 		local newState = not npcCheckboxState[npcName]
@@ -540,7 +510,7 @@ for npcName, _ in pairs(npcTypes) do createNpcEspCheckbox(npcName) end
 
 -- Farm Level Tab
 local farmLevelContentFrame = createTabAndContent("Farm Level", FARM_ACCENT, 3)
-local farmLevelToggle, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(farmLevelContentFrame, "Farm Level", FARM_ACCENT, false, 1, nil)
+local farmLevelToggle, farmLevelButton, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(farmLevelContentFrame, "Farm Level", FARM_ACCENT, false, 1)
 local isFarmLevelActive = false
 local levelStatusFrame = Instance.new("Frame")
 levelStatusFrame.Name = "LevelStatusFrame"
@@ -565,7 +535,7 @@ levelStatusLabel.TextScaled = true
 levelStatusLabel.Font = TITLE_FONT
 levelStatusLabel.Parent = levelStatusFrame
 
-farmLevelToggle.MouseButton1Click:Connect(function()
+farmLevelButton.MouseButton1Click:Connect(function()
 	isFarmLevelActive = not isFarmLevelActive
 	farmLevelCheckmark.Visible = isFarmLevelActive
 	TweenService:Create(farmLevelToggleBox, tweenInfo, {BackgroundColor3 = if isFarmLevelActive then FARM_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
@@ -600,7 +570,7 @@ end)
 
 -- Fruit Finder Tab
 local fruitFinderContentFrame = createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4)
-local fruitFinderToggle, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1, nil)
+local fruitFinderToggle, fruitFinderButton, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
 local isFruitFinderActive = false
 local isTeleporting = false
 local fruitStatusLabel = Instance.new("TextLabel")
@@ -615,8 +585,55 @@ fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
 
-local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits (?)", ACCENT_COLOR, false, 3, "Enable Fruit Finder First")
+local tweenButtonContainer, tweenToFruitButton, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
+
+-- Separate container for the question mark and its tooltip
+local questionMarkContainer = Instance.new("Frame")
+questionMarkContainer.Name = "QuestionMarkContainer"
+questionMarkContainer.Size = UDim2.new(0, 20, 0, 20)
+questionMarkContainer.Position = UDim2.new(0, 155, 0, 10)
+questionMarkContainer.BackgroundTransparency = 1
+questionMarkContainer.Parent = tweenButtonContainer.Parent
+
+local questionMarkLabel = Instance.new("TextLabel")
+questionMarkLabel.Name = "QuestionMark"
+questionMarkLabel.Size = UDim2.new(1, 0, 1, 0)
+questionMarkLabel.BackgroundTransparency = 1
+questionMarkLabel.TextColor3 = FONT_COLOR
+questionMarkLabel.Text = "?"
+questionMarkLabel.TextScaled = true
+questionMarkLabel.Font = TITLE_FONT
+questionMarkLabel.Parent = questionMarkContainer
+
+local tooltip = Instance.new("TextLabel")
+tooltip.Name = "Tooltip"
+tooltip.Size = UDim2.new(0, 200, 0, 25)
+tooltip.Position = UDim2.new(0, 25, 0.5, -12.5) -- Position next to the question mark
+tooltip.AnchorPoint = Vector2.new(0, 0.5)
+tooltip.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+tooltip.BackgroundTransparency = 0
+tooltip.BorderSizePixel = 0
+tooltip.TextColor3 = FONT_COLOR
+tooltip.Text = "Enable Fruit Finder First"
+tooltip.TextSize = 14
+tooltip.Font = BODY_FONT
+tooltip.Visible = false -- Initially hidden
+tooltip.ZIndex = 11
+tooltip.Parent = questionMarkContainer
+
+local tooltipCorner = Instance.new("UICorner")
+tooltipCorner.CornerRadius = UDim.new(0, 5)
+tooltipCorner.Parent = tooltip
+
 local isTweenToFruitActive = false
+
+-- Hover events for the question mark
+questionMarkContainer.MouseEnter:Connect(function()
+	tooltip.Visible = true
+end)
+questionMarkContainer.MouseLeave:Connect(function()
+	tooltip.Visible = false
+end)
 
 local function findNearestFruitPart()
 	local nearestPart = nil
@@ -696,7 +713,7 @@ local function disableFruitFinder()
 	isTeleporting = false
 end
 
-fruitFinderToggle.MouseButton1Click:Connect(function()
+fruitFinderButton.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
 	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
@@ -714,7 +731,7 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	end
 end)
 
-tweenToFruitToggle.MouseButton1Click:Connect(function()
+tweenToFruitButton.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then
 		return
 	end
