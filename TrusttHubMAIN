@@ -658,7 +658,7 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Add a new toggle to choose between Instant Teleport and Smooth Move
+-- Add a new toggle to choose between Instant Teleport and Tween to Fruits
 local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
 local isTweenToFruitActive = false
 tweenToFruitToggle.MouseButton1Click:Connect(function()
