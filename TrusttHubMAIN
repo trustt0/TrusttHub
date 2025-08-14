@@ -659,7 +659,7 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 end)
 
 -- Add a new toggle to choose between Instant Teleport and Smooth Move
-local smoothMoveToggle, smoothMoveCheckmark, smoothMoveToggleBox = createToggleButton(fruitFinderContentFrame, "Smooth Move", ACCENT_COLOR, false, 3)
+local smoothMoveToggle, smoothMoveCheckmark, smoothMoveToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
 local isSmoothMoveActive = false
 smoothMoveToggle.MouseButton1Click:Connect(function()
 	isSmoothMoveActive = not isSmoothMoveActive
@@ -707,9 +707,11 @@ local sliderCorner = Instance.new("UICorner")
 sliderCorner.CornerRadius = UDim.new(0, 5)
 sliderCorner.Parent = sliderFrame
 
+local minSpeed = 50
+local maxSpeed = 300
 local sliderBar = Instance.new("Frame")
 sliderBar.Name = "SliderBar"
-sliderBar.Size = UDim2.new((TWEEN_SPEED - 100) / 400, 0, 1, 0) -- Assumes TWEEN_SPEED is between 100-500, fixed size calculation
+sliderBar.Size = UDim2.new((TWEEN_SPEED - minSpeed) / (maxSpeed - minSpeed), 0, 1, 0)
 sliderBar.BackgroundColor3 = FRUIT_ACCENT
 sliderBar.BorderSizePixel = 0
 sliderBar.Parent = sliderFrame
@@ -719,8 +721,6 @@ local function updateTweenSpeed(input)
 	local newScale = newX / sliderFrame.AbsoluteSize.X
 	sliderBar.Size = UDim2.new(newScale, 0, 1, 0)
 	
-	local minSpeed = 100
-	local maxSpeed = 500
 	local newSpeed = minSpeed + newScale * (maxSpeed - minSpeed)
 	TWEEN_SPEED = newSpeed
 	speedLabel.Text = "Tween Speed: " .. math.floor(TWEEN_SPEED)
