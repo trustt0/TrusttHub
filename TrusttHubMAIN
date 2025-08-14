@@ -1005,8 +1005,7 @@ local function checkAndDestroyScript()
 	end
 end
 
-nukeButton1.MouseButton1Click:Connect(function()aaaaa
-
+nukeButton1.MouseButton1Click:Connect(function()
 	screenGui1:Destroy()
 	checkAndDestroyScript()
 end)
