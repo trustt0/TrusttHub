@@ -1,42 +1,13 @@
---!strict  
---[[  
-	A LocalScript to create four cool, modern, draggable, and dynamic UI menus.  
-	This script is designed to be placed in StarterPlayerScripts.  
-	  
-	This version has been completely redesigned with a "glassmorphism" aesthetic,  
-	featuring frosted transparency, soft shadows, and more vibrant colors.  
-]]  
-
--- SERVICES  
-local Players = game:GetService("Players")  
-local ReplicatedStorage = game:GetService("ReplicatedStorage")  
-local Workspace = game:GetService("Workspace")  
-local TweenService = game:GetService("TweenService")  
-local UserInputService = game:GetService("UserInputService")  
-local RunService = game:GetService("RunService")  
-
--- CONFIGURATION  
-local UI_SIZE = UDim2.new(0, 300, 0, 400)  
-local MINIMIZED_SIZE = UDim2.new(0, 300, 0, 45)  
-local TITLE_FONT = Enum.Font.SourceSansBold  
-local FONT_COLOR = Color3.fromRGB(255, 255, 255)  
-local FROSTED_BACKGROUND = Color3.fromRGB(25, 25, 25)  
-local BORDER_COLOR = Color3.fromRGB(60, 60, 60)  
-local SHADOW_COLOR = Color3.fromRGB(0, 0, 0)  
-
--- ACCENT COLORS FOR EACH MENU  
-local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red  
-local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green  
 --!strict
 --[[
 	A LocalScript to create four cool, modern, draggable, and dynamic UI menus.
+	A LocalScript to create a single, modern, draggable, and dynamic UI menu.
 	This script is designed to be placed in StarterPlayerScripts.
-	
-	This version has been completely redesigned with a "glassmorphism" aesthetic,
-	featuring frosted transparency, soft shadows, and more vibrant colors.
-	
-	FIXED: The layout for the Player & NPC ESP menu has been corrected.
-	Titles now appear above their corresponding toggle options as intended.
+
+	This version includes all four menus. The Fruit menu has been completely
+	rewritten to correctly find fruits and tween the player to them, as requested.
+	This version consolidates all four previous menus (Boss Status, ESP, Farm Level,
+	and Fruit Finder) into a single, tabbed UI. All functionality is retained.
 ]]
 
 -- SERVICES
@@ -50,122 +21,31 @@ local RunService = game:GetService("RunService")
 -- CONFIGURATION
 local UI_SIZE = UDim2.new(0, 300, 0, 400)
 local MINIMIZED_SIZE = UDim2.new(0, 300, 0, 45)
+local UI_SIZE = UDim2.new(0, 500, 0, 420) -- Increased width for tabs
+local MINIMIZED_SIZE = UDim2.new(0, 500, 0, 45)
+local TAB_WIDTH = 150
 local TITLE_FONT = Enum.Font.SourceSansBold
 local FONT_COLOR = Color3.fromRGB(255, 255, 255)
 local FROSTED_BACKGROUND = Color3.fromRGB(25, 25, 25)
 local BORDER_COLOR = Color3.fromRGB(60, 60, 60)
 local SHADOW_COLOR = Color3.fromRGB(0, 0, 0)
+local ACCENT_COLOR = Color3.fromRGB(170, 85, 255) -- Purple accent for the main UI
 
 -- ACCENT COLORS FOR EACH MENU
+-- Specific accent colors for each tab
 local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
 local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
-local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan (New color)
-local OTHER_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange  
-  
-local NPC_ESP_DISTANCE = 500  
-local TRACER_COLOR = OTHER_ACCENT  
-local TRACER_THICKNESS = 0.2  
-local TRACER_TRANSPARENCY = 0.2  
-
--- Get the player's PlayerGui to store the UI  
-local player = Players.LocalPlayer  
-local PlayerGui = player:WaitForChild("PlayerGui")  
-local character = player.Character or player.CharacterAdded:Wait()  
-local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any  
-
--- Create a container for the tracers to ensure they are always visible  
-local TracerContainer = Instance.new("Folder")  
-TracerContainer.Name = "TracerContainer"  
-TracerContainer.Parent = Workspace  
-
--- Reusable function to create UI frames with the new style  
-local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance, color: Color3, isMinimized: boolean?)  
-	local frame = Instance.new("Frame")  
-	frame.Name = "MainFrame"  
-	frame.Size = if isMinimized then MINIMIZED_SIZE else size  
-	frame.Position = position  
-	frame.BackgroundColor3 = FROSTED_BACKGROUND  
-	frame.BackgroundTransparency = 0.25  
-	frame.BorderSizePixel = 0  
-	frame.AnchorPoint = Vector2.new(0.5, 0.5)  
-	frame.ClipsDescendants = not isMinimized or false  
-	frame.Parent = parent  
-
-	local corner = Instance.new("UICorner")  
-	corner.CornerRadius = UDim.new(0, 12)  
-	corner.Parent = frame  
-
-	local stroke = Instance.new("UIStroke")  
-	stroke.Color = BORDER_COLOR  
-	stroke.Thickness = 1.5  
-	stroke.Transparency = 0.5  
-	stroke.Parent = frame  
-
-	local shadow = Instance.new("UIStroke")  
-	shadow.Name = "ShadowStroke"  
-	shadow.Color = SHADOW_COLOR  
-	shadow.Thickness = 2  
-	shadow.Transparency = 0.7  
-	shadow.Parent = frame  
-
-	local layout = Instance.new("UIListLayout")  
-	layout.Padding = UDim.new(0, 10)  
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center  
-	layout.SortOrder = Enum.SortOrder.LayoutOrder  
-	layout.Parent = frame  
-
-	return frame, corner, stroke  
-end  
-
--- Reusable function for the title bar with buttons  
-local function createTitleBar(parent: Instance, title: string, accentColor: Color3)  
-	local titleBar = Instance.new("Frame")  
-	titleBar.Name = "TitleBar"  
-	titleBar.Size = UDim2.new(1, 0, 0, 45)  
-	titleBar.BackgroundColor3 = FROSTED_BACKGROUND  
-	titleBar.BackgroundTransparency = 0.1  
-	titleBar.BorderSizePixel = 0  
-	titleBar.Parent = parent  
-
-	local corner = Instance.new("UICorner")  
-	corner.CornerRadius = UDim.new(0, 10)  
-	corner.Parent = titleBar  
-
-	local gradient = Instance.new("UIGradient")  
-	gradient.Color = ColorSequence.new(accentColor, accentColor:Lerp(Color3.new(0,0,0), 0.5))  
-	gradient.Rotation = 90  
-	gradient.Parent = titleBar  
-
-	local titleLabel = Instance.new("TextLabel")  
-	titleLabel.Name = "TitleLabel"  
-	titleLabel.Size = UDim2.new(1, -70, 1, 0)  
-	titleLabel.Position = UDim2.new(0, 15, 0, 0)  
-	titleLabel.BackgroundTransparency = 1  
-	titleLabel.TextColor3 = FONT_COLOR  
-	titleLabel.TextScaled = true  
-	titleLabel.Font = TITLE_FONT  
-	titleLabel.Text = title  
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left  
-	titleLabel.TextYAlignment = Enum.TextYAlignment.Center  
-	titleLabel.Parent = titleBar  
-
-	local minimizeButton = Instance.new("TextButton")  
-	minimizeButton.Name = "MinimizeButton"  
-	minimizeButton.Size = UDim2.new(0, 30, 1, -15)  
-	minimizeButton.Position = UDim2.new(1, -75, 0, 8)  
-	minimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)  
-	minimizeButton.BorderSizePixel = 0  
-	minimizeButton.Text = "-"  
-	minimizeButton.TextColor3 = FONT_COLOR  
-	minimizeButton.TextSize = 25  
-	minimizeButton.Font = TITLE_FONT  
-	minimizeButton.Parent = titleBar  
+local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
+local FRUIT_ACCENT = Color3.fromRGB(170, 85, 255) -- Purple
 local OTHER_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
+local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange (used this to make it stand out from main accent)
 
 local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = OTHER_ACCENT
+local TRACER_COLOR = Color3.fromRGB(255, 170, 0) -- Orange
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
+local TWEEN_SPEED = 200 -- The speed at which the character will tween to the fruit (in studs per second)
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -177,6 +57,12 @@ local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any
 local TracerContainer = Instance.new("Folder")
 TracerContainer.Name = "TracerContainer"
 TracerContainer.Parent = Workspace
+
+-- Main ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "UnifiedMenu"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = PlayerGui
 
 -- Reusable function to create UI frames with the new style
 local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance, color: Color3, isMinimized: boolean?)
@@ -215,6 +101,7 @@ local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance,
 	layout.Parent = frame
 
 	return frame, corner, stroke
+	return frame
 end
 
 -- Reusable function for the title bar with buttons
@@ -265,16 +152,6 @@ local function createTitleBar(parent: Instance, title: string, accentColor: Colo
 	minCorner.CornerRadius = UDim.new(0, 8)
 	minCorner.Parent = minimizeButton
 
-	local nukeButton = Instance.new("TextButton")  
-	nukeButton.Name = "NukeButton"  
-	nukeButton.Size = UDim2.new(0, 30, 1, -15)  
-	nukeButton.Position = UDim2.new(1, -40, 0, 8)  
-	nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5)  
-	nukeButton.BorderSizePixel = 0  
-	nukeButton.Text = "X"  
-	nukeButton.TextColor3 = FONT_COLOR  
-	nukeButton.TextSize = 20  
-	nukeButton.Font = TITLE_FONT  
 	local nukeButton = Instance.new("TextButton")
 	nukeButton.Name = "NukeButton"
 	nukeButton.Size = UDim2.new(0, 30, 1, -15)
@@ -291,25 +168,17 @@ local function createTitleBar(parent: Instance, title: string, accentColor: Colo
 	nukeCorner.CornerRadius = UDim.new(0, 8)
 	nukeCorner.Parent = nukeButton
 
-	-- Hover effects  
-	minimizeButton.MouseEnter:Connect(function()  minimizeButton.BackgroundColor3 = accentColor end)  
-	minimizeButton.MouseLeave:Connect(function()  minimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end)  
-	nukeButton.MouseEnter:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT end)  
-	nukeButton.MouseLeave:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5) end)  
 	-- Hover effects
 	minimizeButton.MouseEnter:Connect(function()  minimizeButton.BackgroundColor3 = accentColor end)
 	minimizeButton.MouseLeave:Connect(function()  minimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end)
 	nukeButton.MouseEnter:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT end)
 	nukeButton.MouseLeave:Connect(function()  nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5) end)
 
-	return titleBar, minimizeButton, nukeButton  
-end  
 	return titleBar, minimizeButton, nukeButton
 end
 
--- Reusable function for a toggle button  
-local function createToggleButton(parent: Instance, text: string, accentColor: Color3, initialActiveState: boolean)  
 -- Reusable function for a toggle button
+-- Reusable function for a toggle button (used for features within tabs)
 local function createToggleButton(parent: Instance, text: string, accentColor: Color3, initialActiveState: boolean, layoutOrder: number)
 	local container = Instance.new("Frame")
 	container.Name = "ToggleContainer"
@@ -317,69 +186,55 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	container.Size = UDim2.new(1, 0, 0, 40)
 	container.BackgroundColor3 = FROSTED_BACKGROUND
 	container.BackgroundTransparency = 0.5
-@@ -214,65 +218,65 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
+	container.BorderSizePixel = 0
+	container.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = container
+
+	local button = Instance.new("TextButton")
+	button.Name = "ToggleButton"
+	button.Size = UDim2.new(1, 0, 1, 0)
+	button.BackgroundTransparency = 1
+	button.Text = ""
+	button.Parent = container
+
+	local toggleBox = Instance.new("Frame")
+	toggleBox.Name = "ToggleBox"
+	toggleBox.Size = UDim2.new(0, 20, 0, 20)
+	toggleBox.Position = UDim2.new(0, 10, 0.5, -10)
+	toggleBox.BackgroundColor3 = if initialActiveState then accentColor else Color3.fromRGB(80, 80, 80)
+	toggleBox.BorderSizePixel = 1
+	toggleBox.BorderColor3 = BORDER_COLOR
+	toggleBox.Parent = button
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 5)
+	boxCorner.Parent = toggleBox
+
+	local checkmark = Instance.new("ImageLabel")
+	checkmark.Name = "Checkmark"
+	checkmark.BackgroundTransparency = 1
+	checkmark.Size = UDim2.new(1, 0, 1, 0)
+	checkmark.Image = "rbxassetid://603417770"
+	checkmark.ImageColor3 = FONT_COLOR
+	checkmark.Visible = initialActiveState
+	checkmark.Parent = toggleBox
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.Size = UDim2.new(1, -40, 1, 0)
+	label.Position = UDim2.new(0, 35, 0, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = FONT_COLOR
+	label.Text = text
+	label.TextScaled = true
+	label.Font = TITLE_FONT
+	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = button
 
 	return button, checkmark, toggleBox
-end  
-
--- DRAGGING FUNCTIONALITY  
-local isDragging = false  
-local dragStartPos = Vector2.new(0, 0)  
-local dragStartFramePosition = UDim2.new(0, 0, 0, 0)  
-local activeFrame = nil  
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)  
-
-local function setupDrag(frame: Frame, titleBar: Frame)  
-	titleBar.InputBegan:Connect(function(input)  
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-			isDragging = true  
-			dragStartPos = input.Position  
-			dragStartFramePosition = frame.Position  
-			activeFrame = frame  
-			UserInputService.MouseIconEnabled = false  
-		end  
-	end)  
-end  
-
-UserInputService.InputEnded:Connect(function(input)  
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
-		isDragging = false  
-		activeFrame = nil  
-		UserInputService.MouseIconEnabled = true  
-	end  
-end)  
-
-UserInputService.InputChanged:Connect(function(input)  
-	if isDragging and activeFrame and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
-		local delta = input.Position - dragStartPos  
-		local newPosition = dragStartFramePosition + UDim2.new(0, delta.X, 0, delta.Y)  
-		activeFrame.Position = newPosition  
-	end  
-end)  
-
--- =================================================================  
--- === Menu 1: Boss Status =========================================  
--- =================================================================  
-
-local screenGui1 = Instance.new("ScreenGui")  
-screenGui1.Name = "BossStatusMenu"  
-screenGui1.ResetOnSpawn = false  
-screenGui1.Parent = PlayerGui  
-
-local mainFrame1, corner1, stroke1 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, -100), screenGui1, FROSTED_BACKGROUND, false)  
-local titleBar1, minimizeButton1, nukeButton1 = createTitleBar(mainFrame1, "Boss Status", BOSS_ACCENT)  
-setupDrag(mainFrame1, titleBar1)  
-
-local isMinimized1 = false  
-minimizeButton1.MouseButton1Click:Connect(function()  
-	isMinimized1 = not isMinimized1  
-	local targetSize = if isMinimized1 then MINIMIZED_SIZE else UI_SIZE  
-	local targetClipsDescendants = not isMinimized1  
-	TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize}):Play()  
-	task.delay(0.2, function() mainFrame1.ClipsDescendants = targetClipsDescendants end)  
-	minimizeButton1.Text = if isMinimized1 then "+" else "-"  
-end)  
 end
 
 -- DRAGGING FUNCTIONALITY
@@ -419,6 +274,7 @@ end)
 
 -- =================================================================
 -- === Menu 1: Boss Status =========================================
+-- === Consolidated UI Structure ===================================
 -- =================================================================
 
 local screenGui1 = Instance.new("ScreenGui")
@@ -438,27 +294,138 @@ minimizeButton1.MouseButton1Click:Connect(function()
 	TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize}):Play()
 	task.delay(0.2, function() mainFrame1.ClipsDescendants = targetClipsDescendants end)
 	minimizeButton1.Text = if isMinimized1 then "+" else "-"
+local mainFrame = createStyledFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui, FROSTED_BACKGROUND, false)
+local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Unified Menu", ACCENT_COLOR)
+setupDrag(mainFrame, titleBar)
+
+-- Minimize/Maximize functionality for the single menu
+local isMinimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	local targetSize = if isMinimized then MINIMIZED_SIZE else UI_SIZE
+	local targetClipsDescendants = not isMinimized
+	TweenService:Create(mainFrame, tweenInfo, {Size = targetSize}):Play()
+	task.delay(0.2, function() mainFrame.ClipsDescendants = targetClipsDescendants end)
+	minimizeButton.Text = if isMinimized then "+" else "-"
 end)
+
+-- Main content container
+local contentContainer = Instance.new("Frame")
+contentContainer.Name = "ContentContainer"
+contentContainer.Size = UDim2.new(1, 0, 1, -45)
+contentContainer.Position = UDim2.new(0, 0, 0, 45)
+contentContainer.BackgroundTransparency = 1
+contentContainer.BorderSizePixel = 0
+contentContainer.Parent = mainFrame
+
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 0)
+contentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.FillDirection = Enum.FillDirection.Horizontal
+contentLayout.Parent = contentContainer
+
+-- Tab container
+local tabContainer = Instance.new("Frame")
+tabContainer.Name = "TabContainer"
+tabContainer.Size = UDim2.new(0, TAB_WIDTH, 1, 0)
+tabContainer.BackgroundTransparency = 1
+tabContainer.BorderSizePixel = 0
+tabContainer.Parent = contentContainer
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.Padding = UDim.new(0, 5)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Parent = tabContainer
+
+-- Tab content container
+local tabContentFrame = Instance.new("Frame")
+tabContentFrame.Name = "TabContent"
+tabContentFrame.Size = UDim2.new(1, -TAB_WIDTH, 1, 0)
+tabContentFrame.Position = UDim2.new(0, TAB_WIDTH, 0, 0)
+tabContentFrame.BackgroundTransparency = 1
+tabContentFrame.BorderSizePixel = 0
+tabContentFrame.ClipsDescendants = true
+tabContentFrame.Parent = contentContainer
+
+local tabContentLayout = Instance.new("UIListLayout")
+tabContentLayout.Padding = UDim.new(0, 10)
+tabContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabContentLayout.Parent = tabContentFrame
+
+-- =================================================================
+-- === Tab Content Creation ========================================
+-- =================================================================
+local contentFrames = {}
+local tabButtons = {}
+
+local function createTabButton(name: string, accentColor: Color3, layoutOrder: number)
+	local button = Instance.new("TextButton")
+	button.Name = name .. "Tab"
+	button.LayoutOrder = layoutOrder
+	button.Size = UDim2.new(1, -10, 0, 40)
+	button.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
+	button.BackgroundTransparency = 0.5
+	button.BorderSizePixel = 0
+	button.TextColor3 = FONT_COLOR
+	button.Text = name
+	button.TextScaled = true
+	button.Font = TITLE_FONT
+	button.Parent = tabContainer
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = button
+	
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Name = name .. "Content"
+	contentFrame.Size = UDim2.new(1, 0, 1, 0)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.BorderSizePixel = 0
+	contentFrame.Visible = false
+	contentFrame.Parent = tabContentFrame
+	
+	local frameLayout = Instance.new("UIListLayout")
+	frameLayout.Padding = UDim.new(0, 10)
+	frameLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	frameLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	frameLayout.Parent = contentFrame
+
+	button.MouseButton1Click:Connect(function()
+		for _, frame in pairs(contentFrames) do frame.Visible = false end
+		for _, otherButton in pairs(tabButtons) do
+			TweenService:Create(otherButton, tweenInfo, {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1), TextColor3 = FONT_COLOR}):Play()
+		end
+		contentFrame.Visible = true
+		TweenService:Create(button, tweenInfo, {BackgroundColor3 = accentColor, TextColor3 = FONT_COLOR:Lerp(Color3.new(0,0,0), 0.5)}):Play()
+	end)
+	
+	contentFrames[name] = contentFrame
+	tabButtons[name] = button
+
+	return contentFrame
+end
+
+-- Boss Status Tab
+local bossContentFrame = createTabButton("Boss Status", BOSS_ACCENT, 1)
+bossContentFrame.Visible = true
+TweenService:Create(tabButtons["Boss Status"], tweenInfo, {BackgroundColor3 = BOSS_ACCENT, TextColor3 = FONT_COLOR:Lerp(Color3.new(0,0,0), 0.5)}):Play()
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
-@@ -286,421 +290,421 @@ statusLabel.Text = "Checking for bosses..."
+statusLabel.LayoutOrder = 1
+statusLabel.Size = UDim2.new(1, -20, 0, 50)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = FONT_COLOR
+statusLabel.TextScaled = true
+statusLabel.Font = TITLE_FONT
+statusLabel.Text = "Checking for bosses..."
 statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.Parent = mainFrame1
+statusLabel.Parent = bossContentFrame
 
--- DYNAMIC STATUS CHECK  
-local enemiesFolder = Workspace:FindFirstChild("Enemies")  
-if not enemiesFolder then  
-	statusLabel.Text = "No enemies folder found!"  
-end  
-
-task.spawn(function()  
-	while task.wait(1) do  
-		if not screenGui1.Parent then break end  
-		if enemiesFolder then  
-			local sawBoss = enemiesFolder:FindFirstChild("Saw")  
-			if sawBoss and sawBoss:IsA("Model") then  
-				statusLabel.Text = "Bosses spawned!"  
 -- DYNAMIC STATUS CHECK
 local enemiesFolder = Workspace:FindFirstChild("Enemies")
 if not enemiesFolder then
@@ -468,312 +435,15 @@ end
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui1.Parent then break end
+		if not screenGui.Parent then break end
 		if enemiesFolder then
 			local sawBoss = enemiesFolder:FindFirstChild("Saw")
 			if sawBoss and sawBoss:IsA("Model") then
 				statusLabel.Text = "Bosses spawned!"
 				statusLabel.TextColor3 = BOSS_ACCENT
-			else  
-				statusLabel.Text = "No bosses spawned"  
 			else
 				statusLabel.Text = "No bosses spawned"
 				statusLabel.TextColor3 = FONT_COLOR
-			end  
-		end  
-	end  
-end)  
-
--- =================================================================  
--- === Menu 2: Player & NPC ESP ====================================  
--- =================================================================  
-
-local screenGui2 = Instance.new("ScreenGui")  
-screenGui2.Name = "PlayerESPMenu"  
-screenGui2.ResetOnSpawn = false  
-screenGui2.Parent = PlayerGui  
-
-local mainFrame2, corner2, stroke2 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, 100), screenGui2, FROSTED_BACKGROUND, false)  
-local titleBar2, minimizeButton2, nukeButton2 = createTitleBar(mainFrame2, "Player & NPC ESP", ESP_ACCENT)  
-setupDrag(mainFrame2, titleBar2)  
-
-local isMinimized2 = false  
-minimizeButton2.MouseButton1Click:Connect(function()  
-	isMinimized2 = not isMinimized2  
-	local targetSize = if isMinimized2 then MINIMIZED_SIZE else UI_SIZE  
-	local targetClipsDescendants = not isMinimized2  
-	TweenService:Create(mainFrame2, tweenInfo, {Size = targetSize}):Play()  
-	task.delay(0.2, function() mainFrame2.ClipsDescendants = targetClipsDescendants end)  
-	minimizeButton2.Text = if isMinimized2 then "+" else "-"  
-end)  
-
--- Player ESP Section  
-local playerEspLabel = Instance.new("TextLabel")  
-playerEspLabel.Name = "PlayerEspLabel"  
-playerEspLabel.LayoutOrder = 2
-playerEspLabel.Text = "Player ESP Options"  
-playerEspLabel.Size = UDim2.new(1, -20, 0, 25)  
-playerEspLabel.BackgroundTransparency = 1  
-playerEspLabel.TextColor3 = ESP_ACCENT  
-playerEspLabel.TextScaled = true  
-playerEspLabel.Font = TITLE_FONT  
-playerEspLabel.TextXAlignment = Enum.TextXAlignment.Left  
-playerEspLabel.Parent = mainFrame2  
-
-local playerEspTypes = {  
-	["Username ESP"] = false,  
-	["Distance ESP"] = false,  
-	["Player Tracing"] = false,  
-}  
-local playerCheckboxState = { ["Username ESP"] = false, ["Distance ESP"] = false, ["Player Tracing"] = false }  
-
-local function createPlayerEspCheckbox(espName)  
-	local button, checkmark, toggleBox = createToggleButton(mainFrame2, espName, OTHER_ACCENT, false)
-	button.LayoutOrder = 3
-	button.MouseButton1Click:Connect(function()  
-		local newState = not playerCheckboxState[espName]  
-		playerCheckboxState[espName] = newState  
-		checkmark.Visible = newState  
-		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then OTHER_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()  
-	end)  
-end  
-
-for espName, _ in pairs(playerEspTypes) do  
-	createPlayerEspCheckbox(espName)  
-end  
-
--- NPC ESP Section  
-local npcEspLabel = Instance.new("TextLabel")  
-npcEspLabel.Name = "NpcEspLabel"  
-npcEspLabel.LayoutOrder = 4
-npcEspLabel.Text = "NPC ESP Options"  
-npcEspLabel.Size = UDim2.new(1, -20, 0, 25)  
-npcEspLabel.BackgroundTransparency = 1  
-npcEspLabel.TextColor3 = ESP_ACCENT  
-npcEspLabel.TextScaled = true  
-npcEspLabel.Font = TITLE_FONT  
-npcEspLabel.TextXAlignment = Enum.TextXAlignment.Left  
-npcEspLabel.Parent = mainFrame2  
-
-local npcTypes = {  
-	["Set Home Point"] = false,  
-	["Boat Dealer"] = false,  
-}  
-local npcCheckboxState = { ["Set Home Point"] = false, ["Boat Dealer"] = false }  
-
-local function createNpcEspCheckbox(npcName)  
-	local button, checkmark, toggleBox = createToggleButton(mainFrame2, npcName, ESP_ACCENT, false)
-	button.LayoutOrder = 5
-	button.MouseButton1Click:Connect(function()  
-		local newState = not npcCheckboxState[npcName]  
-		npcCheckboxState[npcName] = newState  
-		checkmark.Visible = newState  
-		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then ESP_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()  
-	end)  
-end  
-
-for npcName, _ in pairs(npcTypes) do  
-	createNpcEspCheckbox(npcName)  
-end  
-
--- ESP FUNCTIONALITY (UNCHANGED)  
-local playerLabels = {}  
-local npcLabels = {}  
-local playerTracers = {}  
-local npcsFolder = Workspace:WaitForChild("NPCs")  
-
-local function createPlayerLabel()  
-	local label = Instance.new("TextLabel")  
-	label.BackgroundTransparency = 1  
-	label.Size = UDim2.new(0, 100, 0, 20)  
-	label.TextColor3 = OTHER_ACCENT  
-	label.TextStrokeColor3 = Color3.new(0, 0, 0)  
-	label.TextStrokeTransparency = 0.5  
-	label.TextScaled = true  
-	label.Font = Enum.Font.SourceSansBold  
-	label.ZIndex = 10  
-	label.Parent = screenGui2  
-	return label  
-end  
-local function createPlayerLabelsForExistingPlayers()  
-	for _, p in ipairs(Players:GetPlayers()) do  
-		if p ~= player and not playerLabels[p] then  
-			playerLabels[p] = createPlayerLabel()  
-		end  
-	end  
-end  
-
-local function updatePlayerLabels()  
-	for p, label in pairs(playerLabels) do  
-		local character = p.Character  
-		if not character or not character:FindFirstChild("HumanoidRootPart") then  
-			label.Visible = false  
-			continue  
-		end  
-		local rootPart = character.HumanoidRootPart  
-		local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))  
-		if onScreen then  
-			local labelText = ""  
-			local labelWidth = 100  
-			if playerCheckboxState["Username ESP"] and playerCheckboxState["Distance ESP"] then  
-				labelText = p.Name .. " (" .. tostring(math.floor((rootPart.Position - myRootPart.Position).Magnitude * 0.28 * 10) / 10) .. "m)"  
-				labelWidth = 250  
-			elseif playerCheckboxState["Username ESP"] then  
-				labelText = p.Name  
-				labelWidth = 125  
-			elseif playerCheckboxState["Distance ESP"] then  
-				local distanceInMeters = (rootPart.Position - myRootPart.Position).Magnitude * 0.28  
-				local formattedDistance = math.floor(distanceInMeters * 10) / 10  
-				labelText = formattedDistance .. "m"  
-				labelWidth = 125  
-			end  
-			label.Size = UDim2.new(0, labelWidth, 0, 20)  
-			label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)  
-			label.Text = labelText  
-			label.Visible = true  
-		else  
-			label.Visible = false  
-		end  
-	end  
-end  
-local function removeAllPlayerLabels()  
-	for _, label in pairs(playerLabels) do  
-		if label and label.Parent then label:Destroy() end  
-	end  
-	playerLabels = {}  
-end  
-local function createPlayerTracer()  
-	local tracer = Instance.new("Part")  
-	tracer.Name = "Tracer"  
-	tracer.Anchored = true  
-	tracer.CanCollide = false  
-	tracer.Material = Enum.Material.ForceField  
-	tracer.Transparency = TRACER_TRANSPARENCY  
-	tracer.Color = TRACER_COLOR  
-	tracer.Size = Vector3.new(1, 1, 1)  
-	tracer.Parent = TracerContainer  
-	local mesh = Instance.new("CylinderMesh")  
-	mesh.Parent = tracer  
-	return tracer  
-end  
-local function updatePlayerTracer(tracer, targetPart, myRootPart)  
-	if not myRootPart or not targetPart or not targetPart.Parent then  
-		if tracer then tracer:Destroy() end  
-		return  
-	end  
-	local startPos = myRootPart.Position  
-	local endPos = targetPart.Position  
-	local distance = (startPos - endPos).Magnitude  
-	local middle = startPos:Lerp(endPos, 0.5)  
-	local tracerCFrame = CFrame.new(middle, endPos)  
-	tracerCFrame = tracerCFrame * CFrame.Angles(math.pi / 2, 0, 0)  
-	tracer.CFrame = tracerCFrame  
-	local mesh = tracer:FindFirstChildOfClass("CylinderMesh")  
-	if mesh then mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS) end  
-	tracer.Transparency = TRACER_TRANSPARENCY  
-end  
-local function updatePlayerTracers()  
-	local playersWithTracers = {}  
-	for _, p in ipairs(Players:GetPlayers()) do  
-		if p ~= player then  
-			local targetCharacter = p.Character  
-			local targetPart = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")  
-			if targetPart and targetPart.Position and myRootPart.Position then  
-				local tracer = playerTracers[p]  
-				if not tracer then  
-					tracer = createPlayerTracer()  
-					playerTracers[p] = tracer  
-				end  
-				updatePlayerTracer(tracer, targetPart, myRootPart)  
-				playersWithTracers[p] = true  
-			end  
-		end  
-	end  
-	for p, tracer in pairs(playerTracers) do  
-		if not playersWithTracers[p] then  
-			tracer:Destroy()  
-			playerTracers[p] = nil  
-		end  
-	end  
-end  
-local function removeAllPlayerTracers()  
-	for p, tracer in pairs(playerTracers) do  
-		if tracer and tracer.Parent then tracer:Destroy() end  
-	end  
-	playerTracers = {}  
-end  
-
--- NPC ESP FUNCTIONS  
-local function createNpcLabel(npcName)  
-	local label = Instance.new("TextLabel")  
-	label.BackgroundTransparency = 1  
-	label.Size = UDim2.new(0, 100, 0, 20)  
-	label.TextColor3 = ESP_ACCENT  
-	label.TextStrokeColor3 = Color3.new(0, 0, 0)  
-	label.TextStrokeTransparency = 0.5  
-	label.TextScaled = true  
-	label.Font = Enum.Font.SourceSansBold  
-	label.Text = npcName  
-	label.Name = npcName .. "ESPLabel"  
-	label.ZIndex = 10  
-	label.Parent = screenGui2  
-	return label  
-end  
-local function updateNpcLabels()  
-	local existingNpcs = {}  
-	for _, npc in ipairs(npcsFolder:GetChildren()) do  
-		if npc:IsA("Model") and npc.Name and npcCheckboxState[npc.Name] and npc:FindFirstChild("HumanoidRootPart") then  
-			local rootPart = npc.HumanoidRootPart  
-			local distance = (myRootPart.Position - rootPart.Position).Magnitude  
-			if distance <= NPC_ESP_DISTANCE then  
-				existingNpcs[npc] = true  
-				if not npcLabels[npc] then npcLabels[npc] = createNpcLabel(npc.Name) end  
-				local label = npcLabels[npc]  
-				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))  
-				if onScreen then  
-					label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)  
-					label.Visible = true  
-				else  
-					label.Visible = false  
-				end  
-			end  
-		end  
-	end  
-	for npc, label in pairs(npcLabels) do  
-		if not existingNpcs[npc] then label:Destroy() npcLabels[npc] = nil end  
-	end  
-end  
-local function removeAllNpcLabels()  
-	for _, label in pairs(npcLabels) do  
-		if label and label.Parent then label:Destroy() end  
-	end  
-	npcLabels = {}  
-end  
-
--- =================================================================  
--- === Menu 3: Farm Level ==========================================  
--- =================================================================  
-local screenGui3 = Instance.new("ScreenGui")  
-screenGui3.Name = "FarmLevelMenu"  
-screenGui3.ResetOnSpawn = false  
-screenGui3.Parent = PlayerGui  
-
-local mainFrame3, corner3, stroke3 = createStyledFrame(UI_SIZE, UDim2.new(0.5, -150, 0.5, 300), screenGui3, FROSTED_BACKGROUND, false)  
-local titleBar3, minimizeButton3, nukeButton3 = createTitleBar(mainFrame3, "Farm Level", FARM_ACCENT)  
-setupDrag(mainFrame3, titleBar3)  
-
-local isMinimized3 = false  
-minimizeButton3.MouseButton1Click:Connect(function()  
-	isMinimized3 = not isMinimized3  
-	local targetSize = if isMinimized3 then MINIMIZED_SIZE else UI_SIZE  
-	local targetClipsDescendants = not isMinimized3  
-	TweenService:Create(mainFrame3, tweenInfo, {Size = targetSize}):Play()  
-	task.delay(0.2, function() mainFrame3.ClipsDescendants = targetClipsDescendants end)  
-	minimizeButton3.Text = if isMinimized3 then "+" else "-"  
-end)  
-
--- UI for Level Status  
-local levelStatusFrame = Instance.new("Frame")  
-levelStatusFrame.Name = "LevelStatusFrame"  
 			end
 		end
 	end
@@ -803,6 +473,8 @@ minimizeButton2.MouseButton1Click:Connect(function()
 end)
 
 -- Player ESP Section
+-- ESP Tab
+local espContentFrame = createTabButton("ESP", ESP_ACCENT, 2)
 local playerEspLabel = Instance.new("TextLabel")
 playerEspLabel.Name = "PlayerEspLabel"
 playerEspLabel.LayoutOrder = 1
@@ -814,6 +486,7 @@ playerEspLabel.TextScaled = true
 playerEspLabel.Font = TITLE_FONT
 playerEspLabel.TextXAlignment = Enum.TextXAlignment.Left
 playerEspLabel.Parent = mainFrame2
+playerEspLabel.Parent = espContentFrame
 
 local playerEspTypes = {
 	["Username ESP"] = false,
@@ -824,14 +497,17 @@ local playerCheckboxState = { ["Username ESP"] = false, ["Distance ESP"] = false
 local playerEspLayoutOrder = 2
 local function createPlayerEspCheckbox(espName)
 	local button, checkmark, toggleBox = createToggleButton(mainFrame2, espName, OTHER_ACCENT, false, playerEspLayoutOrder)
+	local button, checkmark, toggleBox = createToggleButton(espContentFrame, espName, ACCENT_COLOR, false, playerEspLayoutOrder)
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
 		local newState = not playerCheckboxState[espName]
 		playerCheckboxState[espName] = newState
 		checkmark.Visible = newState
 		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then OTHER_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 	end)
 end
+for espName, _ in pairs(playerEspTypes) do createPlayerEspCheckbox(espName) end
 
 for espName, _ in pairs(playerEspTypes) do
 	createPlayerEspCheckbox(espName)
@@ -849,6 +525,7 @@ npcEspLabel.TextScaled = true
 npcEspLabel.Font = TITLE_FONT
 npcEspLabel.TextXAlignment = Enum.TextXAlignment.Left
 npcEspLabel.Parent = mainFrame2
+npcEspLabel.Parent = espContentFrame
 playerEspLayoutOrder += 1
 
 local npcTypes = {
@@ -859,6 +536,7 @@ local npcCheckboxState = { ["Set Home Point"] = false, ["Boat Dealer"] = false }
 
 local function createNpcEspCheckbox(npcName)
 	local button, checkmark, toggleBox = createToggleButton(mainFrame2, npcName, ESP_ACCENT, false, playerEspLayoutOrder)
+	local button, checkmark, toggleBox = createToggleButton(espContentFrame, npcName, ESP_ACCENT, false, playerEspLayoutOrder)
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
 		local newState = not npcCheckboxState[npcName]
@@ -867,11 +545,167 @@ local function createNpcEspCheckbox(npcName)
 		TweenService:Create(toggleBox, tweenInfo, {BackgroundColor3 = if newState then ESP_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
 	end)
 end
+for npcName, _ in pairs(npcTypes) do createNpcEspCheckbox(npcName) end
+
+-- Farm Level Tab
+local farmLevelContentFrame = createTabButton("Farm Level", FARM_ACCENT, 3)
+local levelStatusFrame = Instance.new("Frame")
+levelStatusFrame.Name = "LevelStatusFrame"
+levelStatusFrame.LayoutOrder = 2
+levelStatusFrame.Size = UDim2.new(1, -20, 0, 50)
+levelStatusFrame.BackgroundColor3 = FROSTED_BACKGROUND
+levelStatusFrame.BackgroundTransparency = 0.5
+levelStatusFrame.BorderSizePixel = 0
+levelStatusFrame.ClipsDescendants = true
+levelStatusFrame.Visible = false
+levelStatusFrame.Parent = farmLevelContentFrame
+
+local levelStatusCorner = Instance.new("UICorner")
+levelStatusCorner.CornerRadius = UDim.new(0, 8)
+levelStatusCorner.Parent = levelStatusFrame
+
+local levelStatusLabel = Instance.new("TextLabel")
+levelStatusLabel.Name = "LevelStatusLabel"
+levelStatusLabel.Size = UDim2.new(1, 0, 1, 0)
+levelStatusLabel.BackgroundTransparency = 1
+levelStatusLabel.TextColor3 = FONT_COLOR
+levelStatusLabel.Text = "Level Status"
+levelStatusLabel.TextScaled = true
+levelStatusLabel.Font = TITLE_FONT
+levelStatusLabel.Parent = levelStatusFrame
+
+local farmLevelToggle, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(farmLevelContentFrame, "Farm Level", FARM_ACCENT, false, 1)
+local isFarmLevelActive = false
+farmLevelToggle.MouseButton1Click:Connect(function()
+	isFarmLevelActive = not isFarmLevelActive
+	farmLevelCheckmark.Visible = isFarmLevelActive
+	TweenService:Create(farmLevelToggleBox, tweenInfo, {BackgroundColor3 = if isFarmLevelActive then FARM_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	levelStatusFrame.Visible = isFarmLevelActive
+end)
+task.spawn(function()
+	while task.wait(1) do
+		if not screenGui.Parent then break end
+		if isFarmLevelActive then
+			local dataFolder = player:FindFirstChild("Data")
+			if dataFolder then
+				local levelValue = dataFolder:FindFirstChild("Level")
+				if levelValue and levelValue:IsA("IntValue") then
+					local currentLevel = levelValue.Value
+					if currentLevel >= 0 and currentLevel <= 10 then
+						levelStatusLabel.Text = "Your current level is: " .. currentLevel
+					else
+						levelStatusLabel.Text = "Level is not between 0-10"
+					end
+					levelStatusLabel.TextColor3 = FONT_COLOR
+				else
+					levelStatusLabel.Text = "Level IntValue not found!"
+					levelStatusLabel.TextColor3 = BOSS_ACCENT
+				end
+			else
+				levelStatusLabel.Text = "Data folder not found!"
+				levelStatusLabel.TextColor3 = BOSS_ACCENT
+			end
+		end
+	end
+end)
+
+-- Fruit Finder Tab
+local fruitFinderContentFrame = createTabButton("Fruit Finder", FRUIT_ACCENT, 4)
+local fruitFinderToggle, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
+local isFruitFinderActive = false
+local tweeningToFruit = false
+
+fruitFinderToggle.MouseButton1Click:Connect(function()
+	isFruitFinderActive = not isFruitFinderActive
+	fruitFinderCheckmark.Visible = isFruitFinderActive
+	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+end)
+
+local fruitStatusLabel = Instance.new("TextLabel")
+fruitStatusLabel.Name = "FruitStatusLabel"
+fruitStatusLabel.LayoutOrder = 2
+fruitStatusLabel.Size = UDim2.new(1, -20, 0, 50)
+fruitStatusLabel.BackgroundTransparency = 1
+fruitStatusLabel.TextColor3 = FONT_COLOR
+fruitStatusLabel.TextScaled = true
+fruitStatusLabel.Font = TITLE_FONT
+fruitStatusLabel.Text = "Fruit finder is off."
+fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+fruitStatusLabel.Parent = fruitFinderContentFrame
 
 for npcName, _ in pairs(npcTypes) do
 	createNpcEspCheckbox(npcName)
+local function findNearestFruit()
+	local nearestFruit = nil
+	local nearestDistance = math.huge
+	
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit", 1, true) then
+			local fruitPosition = nil
+			if child:IsA("Model") and child.PrimaryPart then
+				fruitPosition = child.PrimaryPart.Position
+			elseif child:IsA("Tool") and child:FindFirstChild("Handle") then
+				fruitPosition = child.Handle.Position
+			end
+			
+			if fruitPosition and myRootPart then
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				if distance < nearestDistance then
+					nearestDistance = distance
+					nearestFruit = child
+				end
+			end
+		end
+	end
+	
+	return nearestFruit
 end
 
+task.spawn(function()
+	while task.wait(1) do
+		if not screenGui.Parent then break end
+		if isFruitFinderActive and not tweeningToFruit and myRootPart then
+			local nearestFruit = findNearestFruit()
+			if nearestFruit then
+				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
+				
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				local tweenTime = distance / TWEEN_SPEED
+				
+				if distance > 20 then
+					tweeningToFruit = true
+					fruitStatusLabel.Text = "Fruit found! Tweening to location."
+					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+					
+					local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+					local tweenProperties = {CFrame = CFrame.new(fruitPosition)}
+					
+					local tween = TweenService:Create(myRootPart, tweenInfo, tweenProperties)
+					tween:Play()
+					
+					tween.Completed:Wait()
+					tweeningToFruit = false
+					fruitStatusLabel.Text = "Fruit finder is ready."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				else
+					fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				end
+			else
+				fruitStatusLabel.Text = "Searching for fruits..."
+				fruitStatusLabel.TextColor3 = FONT_COLOR
+			end
+		elseif not isFruitFinderActive then
+			fruitStatusLabel.Text = "Fruit finder is off."
+			fruitStatusLabel.TextColor3 = FONT_COLOR
+		end
+	end
+end)
+
+
+-- =================================================================
+-- === Event Handling & Cleanup ====================================
+-- =================================================================
 -- ESP FUNCTIONALITY (UNCHANGED)
 local playerLabels = {}
 local npcLabels = {}
@@ -883,12 +717,14 @@ local function createPlayerLabel()
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.new(0, 100, 0, 20)
 	label.TextColor3 = OTHER_ACCENT
+	label.TextColor3 = TRACER_COLOR
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	label.TextStrokeTransparency = 0.5
 	label.TextScaled = true
 	label.Font = Enum.Font.SourceSansBold
 	label.ZIndex = 10
 	label.Parent = screenGui2
+	label.Parent = screenGui
 	return label
 end
 local function createPlayerLabelsForExistingPlayers()
@@ -1013,6 +849,7 @@ local function createNpcLabel(npcName)
 	label.Name = npcName .. "ESPLabel"
 	label.ZIndex = 10
 	label.Parent = screenGui2
+	label.Parent = screenGui
 	return label
 end
 local function updateNpcLabels()
@@ -1072,36 +909,9 @@ end)
 local levelStatusFrame = Instance.new("Frame")
 levelStatusFrame.Name = "LevelStatusFrame"
 levelStatusFrame.LayoutOrder = 2
-levelStatusFrame.Size = UDim2.new(1, -20, 0, 50)  
 levelStatusFrame.Size = UDim2.new(1, -20, 0, 50)
 levelStatusFrame.BackgroundColor3 = FROSTED_BACKGROUND
 levelStatusFrame.BackgroundTransparency = 0.5
-levelStatusFrame.BorderSizePixel = 0  
-levelStatusFrame.ClipsDescendants = true  
-levelStatusFrame.Visible = false  
-levelStatusFrame.Parent = mainFrame3  
-
-local levelStatusCorner = Instance.new("UICorner")  
-levelStatusCorner.CornerRadius = UDim.new(0, 8)  
-levelStatusCorner.Parent = levelStatusFrame  
-
-local levelStatusLabel = Instance.new("TextLabel")  
-levelStatusLabel.Name = "LevelStatusLabel"  
-levelStatusLabel.Size = UDim2.new(1, 0, 1, 0)  
-levelStatusLabel.BackgroundTransparency = 1  
-levelStatusLabel.TextColor3 = FONT_COLOR  
-levelStatusLabel.Text = "Level Status"  
-levelStatusLabel.TextScaled = true  
-levelStatusLabel.Font = TITLE_FONT  
-levelStatusLabel.Parent = levelStatusFrame  
-
--- Toggle button for "farm level"  
-local farmLevelToggle, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(mainFrame3, "Farm Level", FARM_ACCENT, false)
-farmLevelToggle.LayoutOrder = 1
-local isFarmLevelActive = false  
-farmLevelToggle.MouseButton1Click:Connect(function()  
-	isFarmLevelActive = not isFarmLevelActive  
-	farmLevelCheckmark.Visible = isFarmLevelActive  
 levelStatusFrame.BorderSizePixel = 0
 levelStatusFrame.ClipsDescendants = true
 levelStatusFrame.Visible = false
@@ -1128,24 +938,6 @@ farmLevelToggle.MouseButton1Click:Connect(function()
 	isFarmLevelActive = not isFarmLevelActive
 	farmLevelCheckmark.Visible = isFarmLevelActive
 	TweenService:Create(farmLevelToggleBox, tweenInfo, {BackgroundColor3 = if isFarmLevelActive then FARM_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
-	levelStatusFrame.Visible = isFarmLevelActive  
-end)  
-
--- LEVEL CHECKING FUNCTIONALITY  
-task.spawn(function()  
-	while task.wait(1) do  
-		if not screenGui3.Parent then break end  
-		if isFarmLevelActive then  
-			local dataFolder = player:FindFirstChild("Data")  
-			if dataFolder then  
-				local levelValue = dataFolder:FindFirstChild("Level")  
-				if levelValue and levelValue:IsA("IntValue") then  
-					local currentLevel = levelValue.Value  
-					if currentLevel >= 0 and currentLevel <= 10 then  
-						levelStatusLabel.Text = "Your current level is: " .. currentLevel  
-					else  
-						levelStatusLabel.Text = "Level is not between 0-10"  
-					end  
 	levelStatusFrame.Visible = isFarmLevelActive
 end)
 
@@ -1165,70 +957,134 @@ task.spawn(function()
 						levelStatusLabel.Text = "Level is not between 0-10"
 					end
 					levelStatusLabel.TextColor3 = FONT_COLOR
-				else  
-					levelStatusLabel.Text = "Level IntValue not found!"  
 				else
 					levelStatusLabel.Text = "Level IntValue not found!"
 					levelStatusLabel.TextColor3 = BOSS_ACCENT
-				end  
-			else  
-				levelStatusLabel.Text = "Data folder not found!"  
 				end
 			else
 				levelStatusLabel.Text = "Data folder not found!"
 				levelStatusLabel.TextColor3 = BOSS_ACCENT
-			end  
-		end  
-	end  
-end)  
-
--- =================================================================  
--- === Event Handling & Cleanup ====================================  
--- =================================================================  
-Players.PlayerAdded:Connect(function(p)  
-	if p ~= player then playerLabels[p] = createPlayerLabel() playerTracers[p] = createPlayerTracer() end  
-end)  
-Players.PlayerRemoving:Connect(function(p)  
-	local label = playerLabels[p]  
-	if label then label:Destroy() playerLabels[p] = nil end  
-	local tracer = playerTracers[p]  
-	if tracer then tracer:Destroy() playerTracers[p] = nil end  
-end)  
-
-createPlayerLabelsForExistingPlayers()  
-
-RunService.RenderStepped:Connect(function()  
-	myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")  
-	if not myRootPart then return end  
-	local isPlayerLabelEspActive = playerCheckboxState["Username ESP"] or playerCheckboxState["Distance ESP"]  
-	local isTracingActive = playerCheckboxState["Player Tracing"]  
-	if isPlayerLabelEspActive then updatePlayerLabels() else for _, label in pairs(playerLabels) do label.Visible = false end end  
-	if isTracingActive then updatePlayerTracers() else for _, tracer in pairs(playerTracers) do tracer.Transparency = 1 end end  
-	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end  
-end)  
-
-local function checkAndDestroyScript()  
-	if not screenGui1.Parent and not screenGui2.Parent and not screenGui3.Parent then  
-		if TracerContainer then TracerContainer:Destroy() end  
-		script:Destroy()  
-	end  
-end  
-
-nukeButton1.MouseButton1Click:Connect(function() screenGui1:Destroy() checkAndDestroyScript() end)  
-nukeButton2.MouseButton1Click:Connect(function()  
-	removeAllPlayerLabels()  
-	removeAllNpcLabels()  
-	removeAllPlayerTracers()  
-	for espName, _ in pairs(playerCheckboxState) do playerCheckboxState[espName] = false end  
-	for npcName, _ in pairs(npcCheckboxState) do npcCheckboxState[npcName] = false end  
-	screenGui2:Destroy()  
-	checkAndDestroyScript()  
-end)  
-nukeButton3.MouseButton1Click:Connect(function() screenGui3:Destroy() checkAndDestroyScript() end)  
 			end
 		end
 	end
 end)
+
+-- =================================================================
+-- === Menu 4: Fruit Finder ========================================
+-- =================================================================
+
+local screenGui4 = Instance.new("ScreenGui")
+screenGui4.Name = "FruitMenu"
+screenGui4.ResetOnSpawn = false
+screenGui4.Parent = PlayerGui
+
+local mainFrame4, corner4, stroke4 = createStyledFrame(UI_SIZE, UDim2.new(0.5, 150, 0.5, -100), screenGui4, FROSTED_BACKGROUND, false)
+local titleBar4, minimizeButton4, nukeButton4 = createTitleBar(mainFrame4, "Fruit Finder", FRUIT_ACCENT)
+setupDrag(mainFrame4, titleBar4)
+
+local isMinimized4 = false
+minimizeButton4.MouseButton1Click:Connect(function()
+	isMinimized4 = not isMinimized4
+	local targetSize = if isMinimized4 then MINIMIZED_SIZE else UI_SIZE
+	local targetClipsDescendants = not isMinimized4
+	TweenService:Create(mainFrame4, tweenInfo, {Size = targetSize}):Play()
+	task.delay(0.2, function() mainFrame4.ClipsDescendants = targetClipsDescendants end)
+	minimizeButton4.Text = if isMinimized4 then "+" else "-"
+end)
+
+-- Fruit Finder Toggle
+local fruitFinderToggle, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(mainFrame4, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
+local isFruitFinderActive = false
+local tweeningToFruit = false
+
+fruitFinderToggle.MouseButton1Click:Connect(function()
+	isFruitFinderActive = not isFruitFinderActive
+	fruitFinderCheckmark.Visible = isFruitFinderActive
+	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+end)
+
+local fruitStatusLabel = Instance.new("TextLabel")
+fruitStatusLabel.Name = "FruitStatusLabel"
+fruitStatusLabel.LayoutOrder = 2
+fruitStatusLabel.Size = UDim2.new(1, -20, 0, 50)
+fruitStatusLabel.BackgroundTransparency = 1
+fruitStatusLabel.TextColor3 = FONT_COLOR
+fruitStatusLabel.TextScaled = true
+fruitStatusLabel.Font = TITLE_FONT
+fruitStatusLabel.Text = "Fruit finder is off."
+fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+fruitStatusLabel.Parent = mainFrame4
+
+local function findNearestFruit()
+	local nearestFruit = nil
+	local nearestDistance = math.huge
+	
+	for _, child in ipairs(Workspace:GetChildren()) do
+		-- Check if the instance is a Model or Tool and has "Fruit" in its name
+		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit", 1, true) then
+			-- Find the primary part or a part named "Handle" to get its position
+			local fruitPosition = nil
+			if child:IsA("Model") and child.PrimaryPart then
+				fruitPosition = child.PrimaryPart.Position
+			elseif child:IsA("Tool") and child:FindFirstChild("Handle") then
+				fruitPosition = child.Handle.Position
+			end
+			
+			if fruitPosition and myRootPart then
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				if distance < nearestDistance then
+					nearestDistance = distance
+					nearestFruit = child
+				end
+			end
+		end
+	end
+	
+	return nearestFruit
+end
+
+task.spawn(function()
+	while task.wait(1) do
+		if not screenGui4.Parent then break end
+		if isFruitFinderActive and not tweeningToFruit and myRootPart then
+			local nearestFruit = findNearestFruit()
+			if nearestFruit then
+				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
+				
+				local distance = (myRootPart.Position - fruitPosition).Magnitude
+				local tweenTime = distance / TWEEN_SPEED
+				
+				-- Only tween if the distance is significant
+				if distance > 20 then
+					tweeningToFruit = true
+					fruitStatusLabel.Text = "Fruit found! Tweening to location."
+					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+					
+					local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+					local tweenProperties = {CFrame = CFrame.new(fruitPosition)}
+					
+					local tween = TweenService:Create(myRootPart, tweenInfo, tweenProperties)
+					tween:Play()
+					
+					tween.Completed:Wait()
+					tweeningToFruit = false
+					fruitStatusLabel.Text = "Fruit finder is ready."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				else
+					fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				end
+			else
+				fruitStatusLabel.Text = "Searching for fruits..."
+				fruitStatusLabel.TextColor3 = FONT_COLOR
+			end
+		elseif not isFruitFinderActive then
+			fruitStatusLabel.Text = "Fruit finder is off."
+			fruitStatusLabel.TextColor3 = FONT_COLOR
+		end
+	end
+end)
+
 
 -- =================================================================
 -- === Event Handling & Cleanup ====================================
@@ -1256,7 +1112,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local function checkAndDestroyScript()
-	if not screenGui1.Parent and not screenGui2.Parent and not screenGui3.Parent then
+	if not screenGui1.Parent and not screenGui2.Parent and not screenGui3.Parent and not screenGui4.Parent then
 		if TracerContainer then TracerContainer:Destroy() end
 		script:Destroy()
 	end
@@ -1264,6 +1120,7 @@ end
 
 nukeButton1.MouseButton1Click:Connect(function() screenGui1:Destroy() checkAndDestroyScript() end)
 nukeButton2.MouseButton1Click:Connect(function()
+nukeButton.MouseButton1Click:Connect(function() 
 	removeAllPlayerLabels()
 	removeAllNpcLabels()
 	removeAllPlayerTracers()
@@ -1271,5 +1128,9 @@ nukeButton2.MouseButton1Click:Connect(function()
 	for npcName, _ in pairs(npcCheckboxState) do npcCheckboxState[npcName] = false end
 	screenGui2:Destroy()
 	checkAndDestroyScript()
+	if TracerContainer then TracerContainer:Destroy() end
+	if screenGui then screenGui:Destroy() end
+	script:Destroy()
 end)
 nukeButton3.MouseButton1Click:Connect(function() screenGui3:Destroy() checkAndDestroyScript() end)
+nukeButton4.MouseButton1Click:Connect(function() screenGui4:Destroy() checkAndDestroyScript() end)
