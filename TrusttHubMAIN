@@ -631,25 +631,17 @@ local function createPlayerTracer()
 	tracer.Name = "Tracer"
 	tracer.Anchored = true
 	tracer.CanCollide = false
+	
+	-- Change Part material to ForceField so it's always visible
+	tracer.Material = Enum.Material.ForceField
 	tracer.Transparency = TRACER_TRANSPARENCY
+	
 	tracer.Color = TRACER_COLOR
 	tracer.Size = Vector3.new(1, 1, 1)
 	tracer.Parent = TracerContainer
 	
 	local mesh = Instance.new("CylinderMesh")
 	mesh.Parent = tracer
-
-	-- Add the Highlight instance
-	local highlight = Instance.new("Highlight")
-	highlight.Name = "TracerHighlight"
-	highlight.FillColor = TRACER_COLOR
-	highlight.OutlineColor = TRACER_COLOR
-	highlight.FillTransparency = 0.5
-	highlight.OutlineTransparency = 0.5
-	
-	-- THIS IS THE KEY: it makes the highlight visible through other parts.
-	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-	highlight.Parent = tracer
 	
 	return tracer
 end
@@ -673,6 +665,8 @@ local function updatePlayerTracer(tracer, targetPart, myRootPart)
 	if mesh then
 		mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS)
 	end
+	
+	tracer.Transparency = TRACER_TRANSPARENCY
 end
 
 local function updatePlayerTracers()
@@ -820,10 +814,7 @@ RunService.RenderStepped:Connect(function()
 		updatePlayerTracers()
 	else
 		for _, tracer in pairs(playerTracers) do
-			if tracer then
-				tracer:Destroy()
-				playerTracers[p] = nil
-			end
+			tracer.Transparency = 1 -- Hide tracers by making them transparent
 		end
 	end
 
