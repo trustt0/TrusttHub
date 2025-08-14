@@ -38,7 +38,7 @@ local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
-local TWEEN_SPEED = 200
+local TWEEN_SPEED = 100 -- Changed initial TWEEN_SPEED to 100
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -624,7 +624,7 @@ sliderCorner.Parent = sliderFrame
 
 local sliderBar = Instance.new("Frame")
 sliderBar.Name = "SliderBar"
-sliderBar.Size = UDim2.new(0, (TWEEN_SPEED - 100) / 400, 1, 0) -- Assumes TWEEN_SPEED is between 100-500
+sliderBar.Size = UDim2.new((TWEEN_SPEED - 100) / 400, 0, 1, 0) -- Assumes TWEEN_SPEED is between 100-500, fixed size calculation
 sliderBar.BackgroundColor3 = FRUIT_ACCENT
 sliderBar.BorderSizePixel = 0
 sliderBar.Parent = sliderFrame
@@ -663,6 +663,12 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
 	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	
+	-- Immediately update the label on toggle
+	if not isFruitFinderActive then
+		fruitStatusLabel.Text = "Fruit finder is off."
+		fruitStatusLabel.TextColor3 = FONT_COLOR
+	end
 end)
 
 local function findNearestFruit()
@@ -707,6 +713,7 @@ task.spawn(function()
 					fruitStatusLabel.Text = "Fruit found! Tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
+					-- Fix: use the calculated tweenTime here instead of the constant tweenInfo
 					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(fruitPosition)})
 					tween:Play()
 					
@@ -722,9 +729,6 @@ task.spawn(function()
 				fruitStatusLabel.Text = "Searching for fruits..."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
 			end
-		elseif activeTabName == "Fruit Finder" and not isFruitFinderActive then
-			fruitStatusLabel.Text = "Fruit finder is off."
-			fruitStatusLabel.TextColor3 = FONT_COLOR
 		end
 	end
 end)
