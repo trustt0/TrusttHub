@@ -725,9 +725,14 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	if isFruitFinderActive then
 		enableFruitFinder()
 	else
+		-- When Fruit Finder is disabled, also ensure "Tween to Fruits" is turned off
 		disableFruitFinder()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
+
+		isTweenToFruitActive = false
+		tweenToFruitCheckmark.Visible = false
+		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 	end
 end)
 
