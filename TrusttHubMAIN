@@ -3,10 +3,9 @@
 	A LocalScript to create a single, modern, enhanced, and dynamic UI menu.
 	This script is designed to be placed in StarterPlayerScripts.
 	
-	This version addresses the previous design flaws, providing a much larger,
-	more visually appealing UI with a two-panel tabbed layout and a corrected
-	minimization feature that properly hides all content, along with a new
-	dynamic notification system that now appears on a button click.
+	This version includes the full UI, with a two-panel tabbed layout and a corrected
+	minimization feature, a new dynamic notification system, and an adjustment to the
+	vertical positioning of the ESP labels.
 ]]
 
 -- SERVICES
@@ -16,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
 -- CONFIGURATION
 local UI_SIZE = UDim2.new(0, 600, 0, 500) -- Increased UI size for better aesthetics
@@ -39,7 +39,8 @@ local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
-local TWEEN_SPEED = 100 -- Changed initial TWEEN_SPEED to 100
+local TWEEN_SPEED = 100
+local ESP_VERTICAL_OFFSET = 10 -- Adjusted vertical offset for ESP labels
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -257,7 +258,7 @@ end
 -- === UI Construction and Logic ===================================
 -- =================================================================
 
--- DRAGGING FUNCTIONALITY (Same as before, but encapsulated)
+-- DRAGGING FUNCTIONALITY
 local isDragging = false
 local dragStartPos = Vector2.new(0, 0)
 local dragStartFramePosition = UDim2.new(0, 0, 0, 0)
@@ -291,7 +292,6 @@ UserInputService.InputChanged:Connect(function(input)
 		activeFrame.Position = newPosition
 	end
 end)
-
 
 -- Create the main UI elements
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
@@ -406,121 +406,81 @@ local function createTabAndContent(name: string, accentColor: Color3, layoutOrde
 	return contentFrame
 end
 
--- Create the notification frame (now a proper UI element)
-local notificationFrame = Instance.new("Frame")
-notificationFrame.Name = "NotificationFrame"
-notificationFrame.Size = UDim2.new(0, 300, 0, 75)
--- Initial position off-screen
-notificationFrame.Position = UDim2.new(1, -310, 1, 100) 
-notificationFrame.AnchorPoint = Vector2.new(1, 1)
-notificationFrame.BackgroundColor3 = FROSTED_BACKGROUND
-notificationFrame.BackgroundTransparency = 0.25
-notificationFrame.BorderSizePixel = 1
-notificationFrame.BorderColor3 = BORDER_COLOR
-notificationFrame.Visible = false
-notificationFrame.Parent = screenGui
-
-local notificationCorner = Instance.new("UICorner")
-notificationCorner.CornerRadius = UDim.new(0, 10)
-notificationCorner.Parent = notificationFrame
-
-local notificationPadding = Instance.new("UIPadding")
-notificationPadding.PaddingTop = UDim.new(0, 5)
-notificationPadding.PaddingBottom = UDim.new(0, 5)
-notificationPadding.PaddingLeft = UDim.new(0, 10)
-notificationPadding.PaddingRight = UDim.new(0, 10)
-notificationPadding.Parent = notificationFrame
-
-local notificationListLayout = Instance.new("UIListLayout")
-notificationListLayout.Padding = UDim.new(0, 2)
-notificationListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-notificationListLayout.FillDirection = Enum.FillDirection.Vertical
-notificationListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-notificationListLayout.Parent = notificationFrame
-
-local notificationLabel = Instance.new("TextLabel")
-notificationLabel.Name = "NotificationLabel"
-notificationLabel.LayoutOrder = 1
-notificationLabel.Size = UDim2.new(1, 0, 0, 30)
-notificationLabel.BackgroundTransparency = 1
-notificationLabel.TextColor3 = FONT_COLOR
-notificationLabel.Text = ""
-notificationLabel.TextScaled = true
-notificationLabel.Font = BODY_FONT
-notificationLabel.TextXAlignment = Enum.TextXAlignment.Center
-notificationLabel.Parent = notificationFrame
-
-local timerContainer = Instance.new("Frame")
-timerContainer.Name = "TimerContainer"
-timerContainer.LayoutOrder = 2
-timerContainer.Size = UDim2.new(1, -10, 0, 8)
-timerContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-timerContainer.BorderSizePixel = 1
-timerContainer.BorderColor3 = BORDER_COLOR
-timerContainer.Parent = notificationFrame
-
-local timerBar = Instance.new("Frame")
-timerBar.Name = "TimerBar"
-timerBar.Size = UDim2.new(1, 0, 1, 0)
-timerBar.BackgroundColor3 = FRUIT_ACCENT
-timerBar.BorderSizePixel = 0
-timerBar.Parent = timerContainer
-
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 20)
-closeButton.LayoutOrder = 3
-closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-closeButton.BorderSizePixel = 0
-closeButton.Text = "OK"
-closeButton.TextColor3 = FONT_COLOR
-closeButton.TextSize = 14
-closeButton.Font = TITLE_FONT
-closeButton.Parent = notificationFrame
-local closeButtonCorner = Instance.new("UICorner")
-closeButtonCorner.CornerRadius = UDim.new(0, 5)
-closeButtonCorner.Parent = closeButton
-
--- Function to show the dynamic notification
-local currentTween = nil
-local function showNotification(message: string, duration: number?)
-	if currentTween and currentTween.PlaybackState == Enum.PlaybackState.Playing then
-		currentTween:Cancel()
+-- A new, modern notification system
+local currentNotificationFrame = nil
+local function createNotification(message: string, duration: number?)
+	if currentNotificationFrame and currentNotificationFrame.Parent then
+		return -- Don't show a new notification if one is already active
 	end
-	
-	if not duration then duration = 10 end
-	
-	notificationLabel.Text = message
-	notificationFrame.Visible = true
-	timerBar.Size = UDim2.new(1, 0, 1, 0)
-	
-	-- Fade in and slide up
-	local tweenIn = TweenService:Create(notificationFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, -85)})
-	tweenIn:Play()
-	
-	local timerTweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-	currentTween = TweenService:Create(timerBar, timerTweenInfo, {Size = UDim2.new(0, 0, 1, 0)})
-	currentTween:Play()
-	
-	local connection = currentTween.Completed:Connect(function()
-		-- Fade out and slide down after completion
-		local tweenOut = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, 10)})
-		tweenOut:Play()
-		tweenOut.Completed:Wait()
-		notificationFrame.Visible = false
+
+	local notificationFrame = Instance.new("Frame")
+	currentNotificationFrame = notificationFrame -- Set the global reference
+	notificationFrame.Name = "NotificationFrame"
+	notificationFrame.Size = UDim2.new(0, 300, 0, 60)
+	notificationFrame.Position = UDim2.new(1, 20, 0.9, 0) -- Starts off-screen to the right
+	notificationFrame.AnchorPoint = Vector2.new(0, 1)
+	notificationFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	notificationFrame.BackgroundTransparency = 0.1
+	notificationFrame.BorderColor3 = BORDER_COLOR
+	notificationFrame.BorderSizePixel = 1
+	notificationFrame.ZIndex = 10
+	notificationFrame.Parent = PlayerGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = notificationFrame
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = ACCENT_COLOR
+	stroke.Thickness = 1.5
+	stroke.Transparency = 0.5
+	stroke.Parent = notificationFrame
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, -20, 1, -20)
+	textLabel.Position = UDim2.new(0, 10, 0, 10)
+	textLabel.AnchorPoint = Vector2.new(0, 0)
+	textLabel.Text = message
+	textLabel.Font = BODY_FONT
+	textLabel.TextSize = 16
+	textLabel.TextColor3 = FONT_COLOR
+	textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextWrapped = true
+	textLabel.TextXAlignment = Enum.TextXAlignment.Center
+	textLabel.TextYAlignment = Enum.TextYAlignment.Center
+	textLabel.Parent = notificationFrame
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Name = "CloseButton"
+	closeButton.Size = UDim2.new(0, 20, 0, 20)
+	closeButton.Position = UDim2.new(1, -25, 0, 5)
+	closeButton.Text = "X"
+	closeButton.Font = TITLE_FONT
+	closeButton.TextColor3 = FONT_COLOR
+	closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	closeButton.Parent = notificationFrame
+	closeButton.MouseButton1Click:Connect(function()
+		TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 0.9, 0)}):Play()
+		task.wait(0.5)
+		notificationFrame:Destroy()
 	end)
 
-	local closeButtonConnection = closeButton.MouseButton1Click:Connect(function()
-		if currentTween and currentTween.PlaybackState == Enum.PlaybackState.Playing then
-			currentTween:Cancel()
-		end
-		connection:Disconnect() -- Disconnect the old completed connection
-		local tweenOut = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -310, 1, 10)})
-		tweenOut:Play()
-		tweenOut.Completed:Wait()
-		notificationFrame.Visible = false
-		closeButtonConnection:Disconnect() -- Clean up this connection too
-	end)
+	local tweenInfoIn = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	local tweenInfoOut = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, duration or 5)
+	
+	local goalIn = {Position = UDim2.new(1, -320, 0.9, 0)}
+	local goalOut = {Position = UDim2.new(1, 20, 0.9, 0)}
+
+	local tweenIn = TweenService:Create(notificationFrame, tweenInfoIn, goalIn)
+	local tweenOut = TweenService:Create(notificationFrame, tweenInfoOut, goalOut)
+
+	tweenIn:Play()
+	tweenOut:Play()
+
+	tweenOut.Completed:Wait()
+	notificationFrame:Destroy()
+	currentNotificationFrame = nil
 end
 
 -- Boss Status Tab
@@ -782,7 +742,6 @@ local function disableFruitFinder()
 	isTeleporting = false
 end
 
--- Corrected event handler that now properly toggles the fruit finder on/off
 fruitFinderToggle.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
@@ -790,8 +749,8 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	
 	if isFruitFinderActive then
 		enableFruitFinder()
+		createNotification("Fruit Finder has been enabled.")
 	else
-		-- When Fruit Finder is disabled, also ensure "Tween to Fruits" is turned off
 		disableFruitFinder()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
@@ -799,13 +758,13 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+		createNotification("Fruit Finder has been disabled.")
 	end
 end)
 
--- Event handler for the Tween to Fruits toggle (with the new check)
 tweenToFruitToggle.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then
-		showNotification("Please enable Fruit Finder first!")
+		createNotification("Please enable Fruit Finder first!")
 		return
 	end
 	isTweenToFruitActive = not isTweenToFruitActive
@@ -813,8 +772,6 @@ tweenToFruitToggle.MouseButton1Click:Connect(function()
 	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isTweenToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
-
--- Create a slider bar for Tween Speed
 local tweenSpeedFrame = Instance.new("Frame")
 tweenSpeedFrame.Name = "TweenSpeedFrame"
 tweenSpeedFrame.LayoutOrder = 4
@@ -893,7 +850,7 @@ end)
 -- =================================================================
 -- === Event Handling & Cleanup ====================================
 -- =================================================================
--- ESP FUNCTIONALITY (UNCHANGED)
+-- ESP FUNCTIONALITY
 local playerLabels = {}
 local npcLabels = {}
 local playerTracers = {}
@@ -928,7 +885,8 @@ local function updatePlayerLabels()
 			continue
 		end
 		local rootPart = character.HumanoidRootPart
-		local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))
+		-- Adjusted vertical offset to 10
+		local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, ESP_VERTICAL_OFFSET, 0))
 		if onScreen then
 			local labelText = ""
 			local labelWidth = 100
@@ -1046,7 +1004,8 @@ local function updateNpcLabels()
 				existingNpcs[npc] = true
 				if not npcLabels[npc] then npcLabels[npc] = createNpcLabel(npc.Name) end
 				local label = npcLabels[npc]
-				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, 5, 0))
+				-- Adjusted vertical offset to 10
+				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, ESP_VERTICAL_OFFSET, 0))
 				if onScreen then
 					label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)
 					label.Visible = true
@@ -1098,6 +1057,4 @@ nukeButton.MouseButton1Click:Connect(function()
 	script:Destroy()
 end)
 
--- This call is to demonstrate the new notification system when the script first loads.
--- It will fade in and then automatically fade out after 5 seconds.
-showNotification("Welcome to the Enhanced Menu!", 5)
+createNotification("Welcome to the Enhanced Menu!", 5)
