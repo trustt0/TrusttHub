@@ -610,8 +610,9 @@ local function findNearestFruitPart()
 	return nearestPart
 end
 
+
 local fruitFinderConnection = nil
-local function enableFruitFinder()
+local function enableFruitFinderV2()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = RunService.Heartbeat:Connect(function()
 		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -621,13 +622,28 @@ local function enableFruitFinder()
 			local nearestFruitPart = findNearestFruitPart()
 			if nearestFruitPart then
 				isTeleporting = true
-				fruitStatusLabel.Text = "Fruit found! Teleporting to location."
-				fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 				
-				myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
-				
-				task.wait() -- Wait one frame
-				isTeleporting = false
+				if isTweenToFruitActive then
+					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
+					local tweenTime = distance / TWEEN_SPEED
+					
+					fruitStatusLabel.Text = "Fruit found! Smooth moving to location."
+					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+					
+					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
+					tween:Play()
+					
+					tween.Completed:Wait()
+					isTeleporting = false
+				else
+					fruitStatusLabel.Text = "Fruit found! Teleporting to location."
+					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
+					
+					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
+					
+					task.wait() -- Wait one frame
+					isTeleporting = false
+				end
 				
 				fruitStatusLabel.Text = "Fruit finder is ready."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
@@ -639,24 +655,27 @@ local function enableFruitFinder()
 	end)
 end
 
-local function disableFruitFinder()
+local function disableFruitFinderV2()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = nil
+	isTeleporting = false
 end
 
+-- This is the corrected event handler that now correctly calls the V2 functions
 fruitFinderToggle.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
 	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
 	
 	if isFruitFinderActive then
-		enableFruitFinder()
+		enableFruitFinderV2()
 	else
-		disableFruitFinder()
+		disableFruitFinderV2()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
 	end
 end)
+
 
 -- Add a new toggle to choose between Instant Teleport and Tween to Fruits
 local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
@@ -743,73 +762,6 @@ UserInputService.InputChanged:Connect(function(input)
 		updateTweenSpeed(input)
 	end
 end)
-
-
--- Re-implementing the fruit finder logic to include the new toggle
-local function enableFruitFinderV2()
-	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
-	fruitFinderConnection = RunService.Heartbeat:Connect(function()
-		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if not myRootPart then return end
-		
-		if isFruitFinderActive and not isTeleporting then
-			local nearestFruitPart = findNearestFruitPart()
-			if nearestFruitPart then
-				isTeleporting = true
-				
-				if isTweenToFruitActive then
-					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
-					local tweenTime = distance / TWEEN_SPEED
-					
-					fruitStatusLabel.Text = "Fruit found! Smooth moving to location."
-					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
-					
-					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
-					tween:Play()
-					
-					tween.Completed:Wait()
-					isTeleporting = false
-				else
-					fruitStatusLabel.Text = "Fruit found! Teleporting to location."
-					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
-					
-					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
-					
-					task.wait() -- Wait one frame
-					isTeleporting = false
-				end
-				
-				fruitStatusLabel.Text = "Fruit finder is ready."
-				fruitStatusLabel.TextColor3 = FONT_COLOR
-			else
-				fruitStatusLabel.Text = "Searching for fruits..."
-				fruitStatusLabel.TextColor3 = FONT_COLOR
-			end
-		end
-	end)
-end
-
-local function disableFruitFinderV2()
-	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
-	fruitFinderConnection = nil
-	isTeleporting = false
-end
-
-
-fruitFinderToggle.MouseButton1Click:Connect(function()
-	isFruitFinderActive = not isFruitFinderActive
-	fruitFinderCheckmark.Visible = isFruitFinderActive
-	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
-	
-	if isFruitFinderActive then
-		enableFruitFinderV2()
-	else
-		disableFruitFinderV2()
-		fruitStatusLabel.Text = "Fruit finder is off."
-		fruitStatusLabel.TextColor3 = FONT_COLOR
-	end
-end)
-
 
 -- =================================================================
 -- === Event Handling & Cleanup ====================================
