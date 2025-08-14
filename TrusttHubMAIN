@@ -4,7 +4,7 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version includes the full UI, with a two-panel tabbed layout and a corrected
-	minimization feature, and a much more reliable dynamic notification system.
+	minimization feature. The notification system has been removed as requested.
 ]]
 
 -- SERVICES
@@ -405,78 +405,6 @@ local function createTabAndContent(name: string, accentColor: Color3, layoutOrde
 	return contentFrame
 end
 
--- A new, modern notification system
-local function createNotification(message: string, duration: number?)
-	local notificationFrame = Instance.new("Frame")
-	notificationFrame.Name = "NotificationFrame"
-	notificationFrame.Size = UDim2.new(0, 300, 0, 60)
-	notificationFrame.Position = UDim2.new(1, 20, 0.9, 0) -- Starts off-screen to the right
-	notificationFrame.AnchorPoint = Vector2.new(0, 1)
-	notificationFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	notificationFrame.BackgroundTransparency = 0.1
-	notificationFrame.BorderColor3 = BORDER_COLOR
-	notificationFrame.BorderSizePixel = 1
-	notificationFrame.ZIndex = 10
-	notificationFrame.Parent = PlayerGui
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = notificationFrame
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = ACCENT_COLOR
-	stroke.Thickness = 1.5
-	stroke.Transparency = 0.5
-	stroke.Parent = notificationFrame
-
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Size = UDim2.new(1, -20, 1, -20)
-	textLabel.Position = UDim2.new(0, 10, 0, 10)
-	textLabel.AnchorPoint = Vector2.new(0, 0)
-	textLabel.Text = message
-	textLabel.Font = BODY_FONT
-	textLabel.TextSize = 16
-	textLabel.TextColor3 = FONT_COLOR
-	textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	textLabel.BackgroundTransparency = 1
-	textLabel.TextWrapped = true
-	textLabel.TextXAlignment = Enum.TextXAlignment.Center
-	textLabel.TextYAlignment = Enum.TextYAlignment.Center
-	textLabel.Parent = notificationFrame
-
-	local closeButton = Instance.new("TextButton")
-	closeButton.Name = "CloseButton"
-	closeButton.Size = UDim2.new(0, 20, 0, 20)
-	closeButton.Position = UDim2.new(1, -25, 0, 5)
-	closeButton.Text = "X"
-	closeButton.Font = TITLE_FONT
-	closeButton.TextColor3 = FONT_COLOR
-	closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	closeButton.Parent = notificationFrame
-
-	local totalDuration = duration or 5
-	local fadeInDuration = 0.5
-	local stayDuration = totalDuration - fadeInDuration
-	local fadeOutDuration = 0.5
-
-	local tweenInInfo = TweenInfo.new(fadeInDuration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-	local tweenOutInfo = TweenInfo.new(fadeOutDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.In, stayDuration)
-
-	local tweenIn = TweenService:Create(notificationFrame, tweenInInfo, {Position = UDim2.new(1, -320, 0.9, 0)})
-	local tweenOut = TweenService:Create(notificationFrame, tweenOutInfo, {Position = UDim2.new(1, 20, 0.9, 0)})
-
-	tweenIn:Play()
-	tweenIn.Completed:Wait()
-	
-	closeButton.MouseButton1Click:Connect(function()
-		tweenOut:Play()
-	end)
-
-	tweenOut:Play()
-	tweenOut.Completed:Wait()
-	
-	notificationFrame:Destroy()
-end
 
 -- Boss Status Tab
 local bossContentFrame = createTabAndContent("Boss Status", BOSS_ACCENT, 1)
@@ -656,7 +584,7 @@ fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
 
-local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
+local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits (Enable Fruit Finder First)", ACCENT_COLOR, false, 3)
 local isTweenToFruitActive = false
 
 local function findNearestFruitPart()
@@ -744,7 +672,6 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	
 	if isFruitFinderActive then
 		enableFruitFinder()
-		createNotification("Fruit Finder has been enabled.")
 	else
 		disableFruitFinder()
 		fruitStatusLabel.Text = "Fruit finder is off."
@@ -753,13 +680,12 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
-		createNotification("Fruit Finder has been disabled.")
 	end
 end)
 
 tweenToFruitToggle.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then
-		createNotification("Please enable Fruit Finder first!")
+		-- No notification needed, the button text now indicates the prerequisite.
 		return
 	end
 	isTweenToFruitActive = not isTweenToFruitActive
@@ -1051,5 +977,3 @@ nukeButton.MouseButton1Click:Connect(function()
 	if screenGui then screenGui:Destroy() end
 	script:Destroy()
 end)
-
-createNotification("Welcome to the Enhanced Menu!", 5)
