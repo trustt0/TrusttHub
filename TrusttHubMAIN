@@ -677,23 +677,13 @@ local function findNearestFruitPart()
 	local nearestDistance = math.huge
 	
 	for _, child in ipairs(Workspace:GetChildren()) do
-		-- Check for "Fruit" in the name of the object
 		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit", 1, true) then
 			local fruitPart = nil
 			
 			if child:IsA("Model") and child.PrimaryPart then
-				-- If it's a model with a PrimaryPart, use that
 				fruitPart = child.PrimaryPart
-			elseif child:IsA("Tool") then
-				-- If it's a tool, first check for a child model named "Fruit"
-				local fruitModel = child:FindFirstChild("Fruit")
-				if fruitModel and fruitModel:IsA("Model") and fruitModel.PrimaryPart then
-					-- Found a child model named "Fruit" with a PrimaryPart
-					fruitPart = fruitModel.PrimaryPart
-				elseif child:FindFirstChild("Handle") then
-					-- Otherwise, fallback to the tool's Handle
-					fruitPart = child.Handle
-				end
+			elseif child:IsA("Tool") and child:FindFirstChild("Handle") then
+				fruitPart = child.Handle
 			end
 			
 			if fruitPart and myRootPart then
