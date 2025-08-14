@@ -583,6 +583,9 @@ fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
 
+local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
+local isTweenToFruitActive = false
+
 local function findNearestFruitPart()
 	local nearestPart = nil
 	local nearestDistance = math.huge
@@ -612,7 +615,7 @@ end
 
 
 local fruitFinderConnection = nil
-local function enableFruitFinderV2()
+local function enableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = RunService.Heartbeat:Connect(function()
 		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -655,31 +658,28 @@ local function enableFruitFinderV2()
 	end)
 end
 
-local function disableFruitFinderV2()
+local function disableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = nil
 	isTeleporting = false
 end
 
--- This is the corrected event handler that now correctly calls the V2 functions
+-- Corrected event handler that now properly toggles the fruit finder on/off
 fruitFinderToggle.MouseButton1Click:Connect(function()
 	isFruitFinderActive = not isFruitFinderActive
 	fruitFinderCheckmark.Visible = isFruitFinderActive
 	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
 	
 	if isFruitFinderActive then
-		enableFruitFinderV2()
+		enableFruitFinder()
 	else
-		disableFruitFinderV2()
+		disableFruitFinder()
 		fruitStatusLabel.Text = "Fruit finder is off."
 		fruitStatusLabel.TextColor3 = FONT_COLOR
 	end
 end)
 
-
--- Add a new toggle to choose between Instant Teleport and Tween to Fruits
-local tweenToFruitToggle, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
-local isTweenToFruitActive = false
+-- Event handler for the Tween to Fruits toggle
 tweenToFruitToggle.MouseButton1Click:Connect(function()
 	isTweenToFruitActive = not isTweenToFruitActive
 	tweenToFruitCheckmark.Visible = isTweenToFruitActive
