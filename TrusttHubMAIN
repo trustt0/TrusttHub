@@ -38,7 +38,6 @@ local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
-local TWEEN_SPEED = 100 -- Changed initial TWEEN_SPEED to 100
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -570,7 +569,7 @@ end)
 local fruitFinderContentFrame = createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4)
 local fruitFinderToggle, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
 local isFruitFinderActive = false
-local tweeningToFruit = false
+local isTeleporting = false
 local fruitStatusLabel = Instance.new("TextLabel")
 fruitStatusLabel.Name = "FruitStatusLabel"
 fruitStatusLabel.LayoutOrder = 2
@@ -582,94 +581,6 @@ fruitStatusLabel.Font = TITLE_FONT
 fruitStatusLabel.Text = "Fruit finder is off."
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
-
--- Create a slider bar for Tween Speed
-local tweenSpeedFrame = Instance.new("Frame")
-tweenSpeedFrame.Name = "TweenSpeedFrame"
-tweenSpeedFrame.LayoutOrder = 3
-tweenSpeedFrame.Size = UDim2.new(1, -20, 0, 40)
-tweenSpeedFrame.BackgroundColor3 = FROSTED_BACKGROUND
-tweenSpeedFrame.BackgroundTransparency = 0.4
-tweenSpeedFrame.BorderSizePixel = 0
-tweenSpeedFrame.Parent = fruitFinderContentFrame
-
-local tweenSpeedCorner = Instance.new("UICorner")
-tweenSpeedCorner.CornerRadius = UDim.new(0, 8)
-tweenSpeedCorner.Parent = tweenSpeedFrame
-
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Name = "SpeedLabel"
-speedLabel.Size = UDim2.new(0.5, -5, 1, 0)
-speedLabel.Position = UDim2.new(0, 5, 0, 0)
-speedLabel.BackgroundTransparency = 1
-speedLabel.TextColor3 = FONT_COLOR
-speedLabel.Text = "Tween Speed: " .. TWEEN_SPEED
-speedLabel.TextScaled = true
-speedLabel.Font = BODY_FONT
-speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedLabel.Parent = tweenSpeedFrame
-
-local sliderFrame = Instance.new("Frame")
-sliderFrame.Name = "SliderFrame"
-sliderFrame.Size = UDim2.new(0.5, -10, 0, 10)
-sliderFrame.Position = UDim2.new(0.5, 5, 0.5, -5)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-sliderFrame.BorderSizePixel = 1
-sliderFrame.BorderColor3 = BORDER_COLOR
-sliderFrame.Parent = tweenSpeedFrame
-
-local sliderCorner = Instance.new("UICorner")
-sliderCorner.CornerRadius = UDim.new(0, 5)
-sliderCorner.Parent = sliderFrame
-
-local sliderBar = Instance.new("Frame")
-sliderBar.Name = "SliderBar"
-sliderBar.Size = UDim2.new((TWEEN_SPEED - 100) / 400, 0, 1, 0) -- Assumes TWEEN_SPEED is between 100-500, fixed size calculation
-sliderBar.BackgroundColor3 = FRUIT_ACCENT
-sliderBar.BorderSizePixel = 0
-sliderBar.Parent = sliderFrame
-
-local function updateTweenSpeed(input)
-	local newX = math.clamp(input.Position.X - sliderFrame.AbsolutePosition.X, 0, sliderFrame.AbsoluteSize.X)
-	local newScale = newX / sliderFrame.AbsoluteSize.X
-	sliderBar.Size = UDim2.new(newScale, 0, 1, 0)
-	
-	local minSpeed = 100
-	local maxSpeed = 500
-	local newSpeed = minSpeed + newScale * (maxSpeed - minSpeed)
-	TWEEN_SPEED = newSpeed
-	speedLabel.Text = "Tween Speed: " .. math.floor(TWEEN_SPEED)
-end
-
-local isSliding = false
-sliderFrame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		isSliding = true
-		updateTweenSpeed(input)
-	end
-end)
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		isSliding = false
-	end
-end)
-UserInputService.InputChanged:Connect(function(input)
-	if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-		updateTweenSpeed(input)
-	end
-end)
-
-fruitFinderToggle.MouseButton1Click:Connect(function()
-	isFruitFinderActive = not isFruitFinderActive
-	fruitFinderCheckmark.Visible = isFruitFinderActive
-	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
-	
-	-- Immediately update the label on toggle
-	if not isFruitFinderActive then
-		fruitStatusLabel.Text = "Fruit finder is off."
-		fruitStatusLabel.TextColor3 = FONT_COLOR
-	end
-end)
 
 local function findNearestFruitPart()
 	local nearestPart = nil
@@ -705,28 +616,20 @@ local function enableFruitFinder()
 		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if not myRootPart then return end
 		
-		if isFruitFinderActive and not tweeningToFruit then
+		if isFruitFinderActive and not isTeleporting then
 			local nearestFruitPart = findNearestFruitPart()
 			if nearestFruitPart then
-				local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
-				local tweenTime = distance / TWEEN_SPEED
+				isTeleporting = true
+				fruitStatusLabel.Text = "Fruit found! Teleporting to location."
+				fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 				
-				if distance > 20 then
-					tweeningToFruit = true
-					fruitStatusLabel.Text = "Fruit found! Tweening to location."
-					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
-					
-					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
-					tween:Play()
-					
-					tween.Completed:Wait()
-					tweeningToFruit = false
-					fruitStatusLabel.Text = "Fruit finder is ready."
-					fruitStatusLabel.TextColor3 = FONT_COLOR
-				else
-					fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
-					fruitStatusLabel.TextColor3 = FONT_COLOR
-				end
+				myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
+				
+				task.wait() -- Wait one frame
+				isTeleporting = false
+				
+				fruitStatusLabel.Text = "Fruit finder is ready."
+				fruitStatusLabel.TextColor3 = FONT_COLOR
 			else
 				fruitStatusLabel.Text = "Searching for fruits..."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
