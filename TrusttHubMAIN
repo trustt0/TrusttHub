@@ -405,7 +405,7 @@ local function createTabAndContent(name: string, accentColor: Color3, layoutOrde
 	return contentFrame
 end
 
--- A new, modern notification system (FIXED)
+-- A new, modern notification system
 local function createNotification(message: string, duration: number?)
 	local notificationFrame = Instance.new("Frame")
 	notificationFrame.Name = "NotificationFrame"
@@ -453,25 +453,29 @@ local function createNotification(message: string, duration: number?)
 	closeButton.TextColor3 = FONT_COLOR
 	closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	closeButton.Parent = notificationFrame
-	
-	local tweenInInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-	local tweenOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, duration or 5)
+
+	local totalDuration = duration or 5
+	local fadeInDuration = 0.5
+	local stayDuration = totalDuration - fadeInDuration
+	local fadeOutDuration = 0.5
+
+	local tweenInInfo = TweenInfo.new(fadeInDuration, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	local tweenOutInfo = TweenInfo.new(fadeOutDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.In, stayDuration)
 
 	local tweenIn = TweenService:Create(notificationFrame, tweenInInfo, {Position = UDim2.new(1, -320, 0.9, 0)})
 	local tweenOut = TweenService:Create(notificationFrame, tweenOutInfo, {Position = UDim2.new(1, 20, 0.9, 0)})
 
-	-- Handle the tweening logic in a separate task so it doesn't block the main thread.
-	task.spawn(function()
-		tweenIn:Play()
-		tweenIn.Completed:Wait()
-		tweenOut:Play()
-		tweenOut.Completed:Wait()
-		notificationFrame:Destroy()
-	end)
-
+	tweenIn:Play()
+	tweenIn.Completed:Wait()
+	
 	closeButton.MouseButton1Click:Connect(function()
 		tweenOut:Play()
 	end)
+
+	tweenOut:Play()
+	tweenOut.Completed:Wait()
+	
+	notificationFrame:Destroy()
 end
 
 -- Boss Status Tab
