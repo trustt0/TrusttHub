@@ -4,7 +4,7 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version has been optimized for better performance and
-	addresses the issue of tracers being too big, invisible through objects, and adds a save/load function.
+	addresses the issue of tracers being too big and invisible through objects.
 ]]
 
 -- SERVICES
@@ -14,7 +14,6 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local DataStoreService = game:GetService("DataStoreService")
 
 -- CONFIGURATION
 local UI_SIZE = UDim2.new(0, 300, 0, 400)
@@ -38,9 +37,6 @@ local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 local character = player.Character or player.CharacterAdded:Wait()
 local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any
-
--- DataStore to save/load settings
-local settingsDataStore = DataStoreService:GetDataStore("ESP_Settings")
 
 -- Create a container for the tracers to ensure they are always visible
 local TracerContainer = Instance.new("Folder")
@@ -294,60 +290,6 @@ nukeButton2.TextSize = 20
 nukeButton2.Font = TITLE_FONT
 nukeButton2.Parent = titleBar2
 
-local settingsButtonsContainer = Instance.new("Frame")
-settingsButtonsContainer.Name = "SettingsButtons"
-settingsButtonsContainer.Size = UDim2.new(1, -20, 0, 85)
-settingsButtonsContainer.Position = UDim2.new(0, 10, 0.5, 140)
-settingsButtonsContainer.BackgroundTransparency = 1
-settingsButtonsContainer.Parent = mainFrame2
-
-local settingsLayout = Instance.new("UIListLayout")
-settingsLayout.Padding = UDim.new(0, 5)
-settingsLayout.FillDirection = Enum.FillDirection.Vertical
-settingsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-settingsLayout.Parent = settingsButtonsContainer
-
-local saveButton = Instance.new("TextButton")
-saveButton.Name = "SaveSettingsButton"
-saveButton.Size = UDim2.new(1, 0, 0, 25)
-saveButton.BackgroundColor3 = SECONDARY_ACCENT_COLOR
-saveButton.BorderSizePixel = 0
-saveButton.Text = "Save Settings"
-saveButton.TextColor3 = TEXT_COLOR
-saveButton.Font = TITLE_FONT
-saveButton.Parent = settingsButtonsContainer
-
-local loadButton = Instance.new("TextButton")
-loadButton.Name = "LoadSettingsButton"
-loadButton.Size = UDim2.new(1, 0, 0, 25)
-loadButton.BackgroundColor3 = ACCENT_COLOR
-loadButton.BorderSizePixel = 0
-loadButton.Text = "Load Settings"
-loadButton.TextColor3 = TEXT_COLOR
-loadButton.Font = TITLE_FONT
-loadButton.Parent = settingsButtonsContainer
-
-local clearButton = Instance.new("TextButton")
-clearButton.Name = "ClearSettingsButton"
-clearButton.Size = UDim2.new(1, 0, 0, 25)
-clearButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-clearButton.BorderSizePixel = 0
-clearButton.Text = "Clear Settings"
-clearButton.TextColor3 = TEXT_COLOR
-clearButton.Font = TITLE_FONT
-clearButton.Parent = settingsButtonsContainer
-
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 0.5, 200)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = TEXT_COLOR
-statusLabel.Text = "Settings status: Ready"
-statusLabel.TextScaled = true
-statusLabel.Font = TITLE_FONT
-statusLabel.Parent = mainFrame2
-
 -- Player ESP Section
 local playerEspLabel = Instance.new("TextLabel")
 playerEspLabel.Name = "PlayerEspLabel"
@@ -385,8 +327,6 @@ local playerCheckboxState = {
 	["Distance ESP"] = false,
 	["Player Tracing"] = false,
 }
-
-local playerCheckboxes = {}
 
 local function createPlayerEspCheckbox(espName)
 	local button = Instance.new("TextButton")
@@ -434,8 +374,6 @@ local function createPlayerEspCheckbox(espName)
 	espLabel.Font = TITLE_FONT
 	espLabel.TextXAlignment = Enum.TextXAlignment.Left
 	espLabel.Parent = button
-
-	playerCheckboxes[espName] = {button = button, box = checkboxBox, icon = checkboxIcon}
 
 	button.MouseButton1Click:Connect(function()
 		local newState = not playerCheckboxState[espName]
@@ -491,8 +429,6 @@ local npcCheckboxState = {
 	["Boat Dealer"] = false,
 }
 
-local npcCheckboxes = {}
-
 local function createNpcEspCheckbox(npcName)
 	local button = Instance.new("TextButton")
 	button.Name = npcName .. "Checkbox"
@@ -539,8 +475,6 @@ local function createNpcEspCheckbox(npcName)
 	npcLabel.Font = TITLE_FONT
 	npcLabel.TextXAlignment = Enum.TextXAlignment.Left
 	npcLabel.Parent = button
-
-	npcCheckboxes[npcName] = {button = button, box = checkboxBox, icon = checkboxIcon}
 
 	button.MouseButton1Click:Connect(function()
 		local newState = not npcCheckboxState[npcName]
@@ -697,17 +631,25 @@ local function createPlayerTracer()
 	tracer.Name = "Tracer"
 	tracer.Anchored = true
 	tracer.CanCollide = false
-	
-	-- Change Part material to ForceField so it's always visible
-	tracer.Material = Enum.Material.ForceField
 	tracer.Transparency = TRACER_TRANSPARENCY
-	
 	tracer.Color = TRACER_COLOR
 	tracer.Size = Vector3.new(1, 1, 1)
 	tracer.Parent = TracerContainer
 	
 	local mesh = Instance.new("CylinderMesh")
 	mesh.Parent = tracer
+
+	-- Add the Highlight instance
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "TracerHighlight"
+	highlight.FillColor = TRACER_COLOR
+	highlight.OutlineColor = TRACER_COLOR
+	highlight.FillTransparency = 0.5
+	highlight.OutlineTransparency = 0.5
+	
+	-- THIS IS THE KEY: it makes the highlight visible through other parts.
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = tracer
 	
 	return tracer
 end
@@ -731,8 +673,6 @@ local function updatePlayerTracer(tracer, targetPart, myRootPart)
 	if mesh then
 		mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS)
 	end
-	
-	tracer.Transparency = TRACER_TRANSPARENCY
 end
 
 local function updatePlayerTracers()
@@ -832,102 +772,6 @@ local function removeAllNpcLabels()
 	npcLabels = {}
 end
 
-local function updateAllCheckboxes()
-	-- Update Player Checkboxes
-	for name, state in pairs(playerCheckboxState) do
-		local checkbox = playerCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = PLAYER_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-	-- Update NPC Checkboxes
-	for name, state in pairs(npcCheckboxState) do
-		local checkbox = npcCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = NPC_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-end
-
--- DATASTORE FUNCTIONS
-local function SaveSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, {
-			playerSettings = playerCheckboxState,
-			npcSettings = npcCheckboxState
-		})
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Saved!"
-		statusLabel.TextColor3 = SECONDARY_ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to save!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to save settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function LoadSettings()
-	local success, data = pcall(function()
-		return settingsDataStore:GetAsync(player.UserId)
-	end)
-	if success and data then
-		for k, v in pairs(data.playerSettings) do
-			if playerCheckboxState[k] ~= nil then
-				playerCheckboxState[k] = v
-			end
-		end
-		for k, v in pairs(data.npcSettings) do
-			if npcCheckboxState[k] ~= nil then
-				npcCheckboxState[k] = v
-			end
-		end
-		updateAllCheckboxes()
-		statusLabel.Text = "Settings status: Loaded!"
-		statusLabel.TextColor3 = ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: No settings found."
-		statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		warn("Failed to load settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function ClearSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, nil) -- Setting data to nil effectively deletes it
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Cleared!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to clear!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to clear settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-saveButton.MouseButton1Click:Connect(SaveSettings)
-loadButton.MouseButton1Click:Connect(LoadSettings)
-clearButton.MouseButton1Click:Connect(ClearSettings)
-
 -- EVENT HANDLING
 -- We'll manage creation/removal of labels and tracers here instead of in the main loop
 Players.PlayerAdded:Connect(function(p)
@@ -952,7 +796,6 @@ end)
 
 -- Initialize labels for existing players on startup
 createPlayerLabelsForExistingPlayers()
-LoadSettings() -- Load settings on initial startup
 
 -- Main ESP loop
 RunService.RenderStepped:Connect(function()
@@ -977,7 +820,10 @@ RunService.RenderStepped:Connect(function()
 		updatePlayerTracers()
 	else
 		for _, tracer in pairs(playerTracers) do
-			tracer.Transparency = 1 -- Hide tracers by making them transparent
+			if tracer then
+				tracer:Destroy()
+				playerTracers[p] = nil
+			end
 		end
 	end
 
