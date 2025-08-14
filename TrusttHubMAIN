@@ -671,7 +671,6 @@ fruitFinderToggle.MouseButton1Click:Connect(function()
 	end
 end)
 
--- This function has been refactored to return the specific part to tween to.
 local function findNearestFruitPart()
 	local nearestPart = nil
 	local nearestDistance = math.huge
@@ -699,10 +698,14 @@ local function findNearestFruitPart()
 	return nearestPart
 end
 
-task.spawn(function()
-	while task.wait(1) do
-		if not screenGui.Parent then break end
-		if activeTabName == "Fruit Finder" and isFruitFinderActive and not tweeningToFruit and myRootPart then
+local fruitFinderConnection = nil
+local function enableFruitFinder()
+	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
+	fruitFinderConnection = RunService.Heartbeat:Connect(function()
+		myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not myRootPart then return end
+		
+		if isFruitFinderActive and not tweeningToFruit then
 			local nearestFruitPart = findNearestFruitPart()
 			if nearestFruitPart then
 				local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
@@ -713,7 +716,6 @@ task.spawn(function()
 					fruitStatusLabel.Text = "Fruit found! Tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
-					-- Fix: use the calculated tweenTime here instead of the constant tweenInfo
 					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
 					tween:Play()
 					
@@ -730,6 +732,25 @@ task.spawn(function()
 				fruitStatusLabel.TextColor3 = FONT_COLOR
 			end
 		end
+	end)
+end
+
+local function disableFruitFinder()
+	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
+	fruitFinderConnection = nil
+end
+
+fruitFinderToggle.MouseButton1Click:Connect(function()
+	isFruitFinderActive = not isFruitFinderActive
+	fruitFinderCheckmark.Visible = isFruitFinderActive
+	TweenService:Create(fruitFinderToggleBox, tweenInfo, {BackgroundColor3 = if isFruitFinderActive then FRUIT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	
+	if isFruitFinderActive then
+		enableFruitFinder()
+	else
+		disableFruitFinder()
+		fruitStatusLabel.Text = "Fruit finder is off."
+		fruitStatusLabel.TextColor3 = FONT_COLOR
 	end
 end)
 
