@@ -6,7 +6,7 @@
 	This version addresses the previous design flaws, providing a much larger,
 	more visually appealing UI with a two-panel tabbed layout and a corrected
 	minimization feature that properly hides all content, along with a new
-	dynamic notification system.
+	dynamic notification system that now appears on a button click.
 ]]
 
 -- SERVICES
@@ -410,7 +410,8 @@ end
 local notificationFrame = Instance.new("Frame")
 notificationFrame.Name = "NotificationFrame"
 notificationFrame.Size = UDim2.new(0, 300, 0, 75)
-notificationFrame.Position = UDim2.new(1, -310, 1, -100)
+-- Initial position off-screen
+notificationFrame.Position = UDim2.new(1, -310, 1, 100) 
 notificationFrame.AnchorPoint = Vector2.new(1, 1)
 notificationFrame.BackgroundColor3 = FROSTED_BACKGROUND
 notificationFrame.BackgroundTransparency = 0.25
@@ -804,7 +805,7 @@ end)
 -- Event handler for the Tween to Fruits toggle (with the new check)
 tweenToFruitToggle.MouseButton1Click:Connect(function()
 	if not isFruitFinderActive then
-		showNotification("Please enable Fruit Finder first.")
+		showNotification("Please enable Fruit Finder first!")
 		return
 	end
 	isTweenToFruitActive = not isTweenToFruitActive
@@ -1096,3 +1097,7 @@ nukeButton.MouseButton1Click:Connect(function()
 	if screenGui then screenGui:Destroy() end
 	script:Destroy()
 end)
+
+-- This call is to demonstrate the new notification system when the script first loads.
+-- It will fade in and then automatically fade out after 5 seconds.
+showNotification("Welcome to the Enhanced Menu!", 5)
