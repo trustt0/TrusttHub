@@ -4,7 +4,7 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version has been optimized for better performance and
-	addresses the issue of tracers being too big, invisible through objects, and adds a save/load function.
+	addresses the issue of tracers being too big and invisible through objects.
 ]]
 
 -- SERVICES
@@ -14,7 +14,6 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local DataStoreService = game:GetService("DataStoreService")
 
 -- CONFIGURATION
 local UI_SIZE = UDim2.new(0, 300, 0, 400)
@@ -39,20 +38,16 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 local character = player.Character or player.CharacterAdded:Wait()
 local myRootPart: Part = character:FindFirstChild("HumanoidRootPart") :: any
 
--- DataStore to save/load settings
-local settingsDataStore = DataStoreService:GetDataStore("ESP_Settings")
-
 -- Create a container for the tracers to ensure they are always visible
 local TracerContainer = Instance.new("Folder")
 TracerContainer.Name = "TracerContainer"
 TracerContainer.Parent = Workspace
 
 -- =================================================================
--- === UI CREATION SECTION =========================================
--- This section handles all UI instance creation and styling.
+-- === Boss Status Menu (Menu 1) ===================================
 -- =================================================================
 
--- Menu 1 UI
+-- SETUP UI ELEMENTS FOR MENU 1
 local screenGui1 = Instance.new("ScreenGui")
 screenGui1.Name = "SawBossMenu"
 screenGui1.ResetOnSpawn = false
@@ -132,7 +127,90 @@ nukeButton1.TextSize = 20
 nukeButton1.Font = TITLE_FONT
 nukeButton1.Parent = titleBar1
 
--- Menu 2 UI
+-- DRAGGING FUNCTIONALITY FOR MENU 1
+local isDragging1 = false
+local dragStartPos1 = Vector2.new(0, 0)
+local dragStartFramePosition1 = UDim2.new(0, 0, 0, 0)
+
+titleBar1.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDragging1 = true
+		dragStartPos1 = input.Position
+		dragStartFramePosition1 = mainFrame1.Position
+		UserInputService.MouseIconEnabled = false
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isDragging1 = false
+		UserInputService.MouseIconEnabled = true
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if isDragging1 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStartPos1
+		local newPosition = dragStartFramePosition1 + UDim2.new(0, delta.X, 0, delta.Y)
+		mainFrame1.Position = newPosition
+	end
+end)
+
+-- BUTTON FUNCTIONALITY FOR MENU 1
+local isMinimized1 = false
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+minimizeButton1.MouseButton1Click:Connect(function()
+	isMinimized1 = not isMinimized1
+
+	local targetSize
+	if isMinimized1 then
+		targetSize = MINIMIZED_SIZE
+	else
+		targetSize = UI_SIZE
+	end
+	local targetClipsDescendants = not isMinimized1
+
+	local tween = TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize})
+	tween:Play()
+
+	task.delay(0.2, function()
+		mainFrame1.ClipsDescendants = targetClipsDescendants
+	end)
+
+	if isMinimized1 then
+		minimizeButton1.Text = "+"
+	else
+		minimizeButton1.Text = "-"
+	end
+end)
+
+-- DYNAMIC STATUS CHECK FOR MENU 1
+local enemiesFolder = Workspace:FindFirstChild("Enemies")
+
+if not enemiesFolder then
+	titleLabel1.Text = "No enemies folder found!"
+end
+
+task.spawn(function()
+	while task.wait(1) do
+		if not screenGui1.Parent then break end
+		if enemiesFolder then
+			local sawBoss = enemiesFolder:FindFirstChild("Saw")
+			if sawBoss and sawBoss:IsA("Model") then
+				titleLabel1.Text = "Bosses spawned!"
+			else
+				titleLabel1.Text = "No bosses spawned"
+			end
+		end
+	end
+end)
+
+-- =================================================================
+-- === Player & NPC ESP Menu (Menu 2) ==============================
+-- =================================================================
+
+-- SETUP UI ELEMENTS FOR MENU 2
 local screenGui2 = Instance.new("ScreenGui")
 screenGui2.Name = "PlayerESPMenu"
 screenGui2.ResetOnSpawn = false
@@ -212,60 +290,6 @@ nukeButton2.TextSize = 20
 nukeButton2.Font = TITLE_FONT
 nukeButton2.Parent = titleBar2
 
-local settingsButtonsContainer = Instance.new("Frame")
-settingsButtonsContainer.Name = "SettingsButtons"
-settingsButtonsContainer.Size = UDim2.new(1, -20, 0, 85)
-settingsButtonsContainer.Position = UDim2.new(0, 10, 0.5, 140)
-settingsButtonsContainer.BackgroundTransparency = 1
-settingsButtonsContainer.Parent = mainFrame2
-
-local settingsLayout = Instance.new("UIListLayout")
-settingsLayout.Padding = UDim.new(0, 5)
-settingsLayout.FillDirection = Enum.FillDirection.Vertical
-settingsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-settingsLayout.Parent = settingsButtonsContainer
-
-local saveButton = Instance.new("TextButton")
-saveButton.Name = "SaveSettingsButton"
-saveButton.Size = UDim2.new(1, 0, 0, 25)
-saveButton.BackgroundColor3 = SECONDARY_ACCENT_COLOR
-saveButton.BorderSizePixel = 0
-saveButton.Text = "Save Settings"
-saveButton.TextColor3 = TEXT_COLOR
-saveButton.Font = TITLE_FONT
-saveButton.Parent = settingsButtonsContainer
-
-local loadButton = Instance.new("TextButton")
-loadButton.Name = "LoadSettingsButton"
-loadButton.Size = UDim2.new(1, 0, 0, 25)
-loadButton.BackgroundColor3 = ACCENT_COLOR
-loadButton.BorderSizePixel = 0
-loadButton.Text = "Load Settings"
-loadButton.TextColor3 = TEXT_COLOR
-loadButton.Font = TITLE_FONT
-loadButton.Parent = settingsButtonsContainer
-
-local clearButton = Instance.new("TextButton")
-clearButton.Name = "ClearSettingsButton"
-clearButton.Size = UDim2.new(1, 0, 0, 25)
-clearButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-clearButton.BorderSizePixel = 0
-clearButton.Text = "Clear Settings"
-clearButton.TextColor3 = TEXT_COLOR
-clearButton.Font = TITLE_FONT
-clearButton.Parent = settingsButtonsContainer
-
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(1, -20, 0, 20)
-statusLabel.Position = UDim2.new(0, 10, 0.5, 200)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = TEXT_COLOR
-statusLabel.Text = "Settings status: Ready"
-statusLabel.TextScaled = true
-statusLabel.Font = TITLE_FONT
-statusLabel.Parent = mainFrame2
-
 -- Player ESP Section
 local playerEspLabel = Instance.new("TextLabel")
 playerEspLabel.Name = "PlayerEspLabel"
@@ -303,8 +327,6 @@ local playerCheckboxState = {
 	["Distance ESP"] = false,
 	["Player Tracing"] = false,
 }
-
-local playerCheckboxes = {}
 
 local function createPlayerEspCheckbox(espName)
 	local button = Instance.new("TextButton")
@@ -352,8 +374,6 @@ local function createPlayerEspCheckbox(espName)
 	espLabel.Font = TITLE_FONT
 	espLabel.TextXAlignment = Enum.TextXAlignment.Left
 	espLabel.Parent = button
-
-	playerCheckboxes[espName] = {button = button, box = checkboxBox, icon = checkboxIcon}
 
 	button.MouseButton1Click:Connect(function()
 		local newState = not playerCheckboxState[espName]
@@ -409,8 +429,6 @@ local npcCheckboxState = {
 	["Boat Dealer"] = false,
 }
 
-local npcCheckboxes = {}
-
 local function createNpcEspCheckbox(npcName)
 	local button = Instance.new("TextButton")
 	button.Name = npcName .. "Checkbox"
@@ -458,8 +476,6 @@ local function createNpcEspCheckbox(npcName)
 	npcLabel.TextXAlignment = Enum.TextXAlignment.Left
 	npcLabel.Parent = button
 
-	npcCheckboxes[npcName] = {button = button, box = checkboxBox, icon = checkboxIcon}
-
 	button.MouseButton1Click:Connect(function()
 		local newState = not npcCheckboxState[npcName]
 		npcCheckboxState[npcName] = newState
@@ -477,91 +493,6 @@ end
 for npcName, _ in pairs(npcTypes) do
 	createNpcEspCheckbox(npcName)
 end
-
--- =================================================================
--- === SCRIPT FUNCTIONALITY SECTION ================================
--- This section contains all the game logic, event handling,
--- and functions that make the UI interactive.
--- =================================================================
-
--- DRAGGING FUNCTIONALITY FOR MENU 1
-local isDragging1 = false
-local dragStartPos1 = Vector2.new(0, 0)
-local dragStartFramePosition1 = UDim2.new(0, 0, 0, 0)
-
-titleBar1.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging1 = true
-		dragStartPos1 = input.Position
-		dragStartFramePosition1 = mainFrame1.Position
-		UserInputService.MouseIconEnabled = false
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isDragging1 = false
-		UserInputService.MouseIconEnabled = true
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if isDragging1 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStartPos1
-		local newPosition = dragStartFramePosition1 + UDim2.new(0, delta.X, 0, delta.Y)
-		mainFrame1.Position = newPosition
-	end
-end)
-
--- BUTTON FUNCTIONALITY FOR MENU 1
-local isMinimized1 = false
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-minimizeButton1.MouseButton1Click:Connect(function()
-	isMinimized1 = not isMinimized1
-
-	local targetSize
-	if isMinimized1 then
-		targetSize = MINIMIZED_SIZE
-	else
-		targetSize = UI_SIZE
-	end
-	local targetClipsDescendants = not isMinimized1
-
-	local tween = TweenService:Create(mainFrame1, tweenInfo, {Size = targetSize})
-	tween:Play()
-
-	task.delay(0.2, function()
-		mainFrame1.ClipsDescendants = targetClipsDescendants
-	end)
-
-	if isMinimized1 then
-		minimizeButton1.Text = "+"
-	else
-		minimizeButton1.Text = "-"
-	end
-end)
-
--- DYNAMIC STATUS CHECK FOR MENU 1
-local enemiesFolder = Workspace:FindFirstChild("Enemies")
-
-if not enemiesFolder then
-	titleLabel1.Text = "No enemies folder found!"
-end
-
-task.spawn(function()
-	while task.wait(1) do
-		if not screenGui1.Parent then break end
-		if enemiesFolder then
-			local sawBoss = enemiesFolder:FindFirstChild("Saw")
-			if sawBoss and sawBoss:IsA("Model") then
-				titleLabel1.Text = "Bosses spawned!"
-			else
-				titleLabel1.Text = "No bosses spawned"
-			end
-		end
-	end
-end)
 
 -- DRAGGING FUNCTIONALITY FOR MENU 2
 local isDragging2 = false
@@ -835,102 +766,6 @@ local function removeAllNpcLabels()
 	npcLabels = {}
 end
 
-local function updateAllCheckboxes()
-	-- Update Player Checkboxes
-	for name, state in pairs(playerCheckboxState) do
-		local checkbox = playerCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = PLAYER_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-	-- Update NPC Checkboxes
-	for name, state in pairs(npcCheckboxState) do
-		local checkbox = npcCheckboxes[name]
-		if checkbox then
-			if state then
-				checkbox.icon.Visible = true
-				checkbox.box.BackgroundColor3 = NPC_ACCENT_COLOR
-			else
-				checkbox.icon.Visible = false
-				checkbox.box.BackgroundColor3 = PRIMARY_COLOR
-			end
-		end
-	end
-end
-
--- DATASTORE FUNCTIONS
-local function SaveSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, {
-			playerSettings = playerCheckboxState,
-			npcSettings = npcCheckboxState
-		})
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Saved!"
-		statusLabel.TextColor3 = SECONDARY_ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to save!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to save settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function LoadSettings()
-	local success, data = pcall(function()
-		return settingsDataStore:GetAsync(player.UserId)
-	end)
-	if success and data then
-		for k, v in pairs(data.playerSettings) do
-			if playerCheckboxState[k] ~= nil then
-				playerCheckboxState[k] = v
-			end
-		end
-		for k, v in pairs(data.npcSettings) do
-			if npcCheckboxState[k] ~= nil then
-				npcCheckboxState[k] = v
-			end
-		end
-		updateAllCheckboxes()
-		statusLabel.Text = "Settings status: Loaded!"
-		statusLabel.TextColor3 = ACCENT_COLOR
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: No settings found."
-		statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		warn("Failed to load settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-local function ClearSettings()
-	local success, err = pcall(function()
-		settingsDataStore:SetAsync(player.UserId, nil) -- Setting data to nil effectively deletes it
-	end)
-	if success then
-		statusLabel.Text = "Settings status: Cleared!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	else
-		statusLabel.Text = "Settings status: Failed to clear!"
-		statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-		warn("Failed to clear settings:", err)
-		task.delay(3, function() statusLabel.Text = "Settings status: Ready" end)
-	end
-end
-
-saveButton.MouseButton1Click:Connect(SaveSettings)
-loadButton.MouseButton1Click:Connect(LoadSettings)
-clearButton.MouseButton1Click:Connect(ClearSettings)
-
 -- EVENT HANDLING
 -- We'll manage creation/removal of labels and tracers here instead of in the main loop
 Players.PlayerAdded:Connect(function(p)
@@ -955,7 +790,6 @@ end)
 
 -- Initialize labels for existing players on startup
 createPlayerLabelsForExistingPlayers()
-LoadSettings() -- Load settings on initial startup
 
 -- Main ESP loop
 RunService.RenderStepped:Connect(function()
