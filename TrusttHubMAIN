@@ -55,7 +55,7 @@ TracerContainer.Parent = Workspace
 -- This section handles all UI instance creation and styling.
 -- =================================================================
 
--- Menu 1 UI
+-- Menu 1 UI (Bosses)
 local screenGui1 = Instance.new("ScreenGui")
 screenGui1.Name = "SawBossMenu"
 screenGui1.ResetOnSpawn = false
@@ -135,7 +135,7 @@ nukeButton1.TextSize = 20
 nukeButton1.Font = TITLE_FONT
 nukeButton1.Parent = titleBar1
 
--- Menu 2 UI
+-- Menu 2 UI (Player/NPC ESP)
 local screenGui2 = Instance.new("ScreenGui")
 screenGui2.Name = "PlayerESPMenu"
 screenGui2.ResetOnSpawn = false
