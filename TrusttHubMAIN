@@ -35,6 +35,7 @@ local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = OTHER_ACCENT
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
+local TWEEN_SPEED = 200 -- The speed at which the character will tween to the fruit (in studs per second)
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -740,15 +741,16 @@ end
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui4.Parent then break end
-		if isFruitFinderActive and not tweeningToFruit then
+		if isFruitFinderActive and not tweeningToFruit and myRootPart then
 			local nearestFruit = findNearestFruit()
 			if nearestFruit then
 				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
 				
 				local distance = (myRootPart.Position - fruitPosition).Magnitude
-				local tweenTime = distance / 200 -- Speed is 200 studs per second
+				local tweenTime = distance / TWEEN_SPEED
 				
-				if tweenTime > 0.1 then -- Only tween if we're not right next to it
+				-- Only tween if the distance is significant
+				if distance > 20 then
 					tweeningToFruit = true
 					fruitStatusLabel.Text = "Fruit found! Tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
@@ -762,6 +764,9 @@ task.spawn(function()
 					tween.Completed:Wait()
 					tweeningToFruit = false
 					fruitStatusLabel.Text = "Fruit finder is ready."
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+				else
+					fruitStatusLabel.Text = "Found a fruit, but it's too close to tween."
 					fruitStatusLabel.TextColor3 = FONT_COLOR
 				end
 			else
