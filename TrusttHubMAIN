@@ -5,6 +5,7 @@
 	
 	This version consolidates all four previous menus (Boss Status, ESP, Farm Level,
 	and Fruit Finder) into a single, tabbed UI. All functionality is retained.
+	This is a corrected version to fix the issue where the menus were not consolidating.
 ]]
 
 -- SERVICES
@@ -16,7 +17,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 -- CONFIGURATION
-local UI_SIZE = UDim2.new(0, 500, 0, 420) -- Increased width for tabs
+local UI_SIZE = UDim2.new(0, 500, 0, 420)
 local MINIMIZED_SIZE = UDim2.new(0, 500, 0, 45)
 local TAB_WIDTH = 150
 local TITLE_FONT = Enum.Font.SourceSansBold
@@ -30,13 +31,13 @@ local ACCENT_COLOR = Color3.fromRGB(170, 85, 255) -- Purple accent for the main 
 local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
 local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
-local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange (used this to make it stand out from main accent)
+local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
 
 local NPC_ESP_DISTANCE = 500
-local TRACER_COLOR = Color3.fromRGB(255, 170, 0) -- Orange
+local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
-local TWEEN_SPEED = 200 -- The speed at which the character will tween to the fruit (in studs per second)
+local TWEEN_SPEED = 200
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -56,7 +57,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
 -- Reusable function to create UI frames with the new style
-local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance, color: Color3, isMinimized: boolean?)
+local function createStyledFrame(size: UDim2, position: UDim2, parent: Instance, isMinimized: boolean?)
 	local frame = Instance.new("Frame")
 	frame.Name = "MainFrame"
 	frame.Size = if isMinimized then MINIMIZED_SIZE else size
@@ -258,7 +259,7 @@ end)
 -- =================================================================
 -- === Consolidated UI Structure ===================================
 -- =================================================================
-local mainFrame = createStyledFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui, FROSTED_BACKGROUND, false)
+local mainFrame = createStyledFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui, false)
 local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Unified Menu", ACCENT_COLOR)
 setupDrag(mainFrame, titleBar)
 
@@ -269,7 +270,8 @@ minimizeButton.MouseButton1Click:Connect(function()
 	local targetSize = if isMinimized then MINIMIZED_SIZE else UI_SIZE
 	local targetClipsDescendants = not isMinimized
 	TweenService:Create(mainFrame, tweenInfo, {Size = targetSize}):Play()
-	task.delay(0.2, function() mainFrame.ClipsDescendants = targetClipsDescendants end)
+	-- Wait for the tween to complete before changing ClipsDescendants to avoid visual glitches
+	task.delay(0.3, function() mainFrame.ClipsDescendants = targetClipsDescendants end)
 	minimizeButton.Text = if isMinimized then "+" else "-"
 end)
 
@@ -313,17 +315,26 @@ tabContentFrame.BorderSizePixel = 0
 tabContentFrame.ClipsDescendants = true
 tabContentFrame.Parent = contentContainer
 
-local tabContentLayout = Instance.new("UIListLayout")
-tabContentLayout.Padding = UDim.new(0, 10)
-tabContentLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-tabContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabContentLayout.Parent = tabContentFrame
+-- Use a `UIPadding` for the content to give it some space
+local contentPadding = Instance.new("UIPadding")
+contentPadding.PaddingTop = UDim.new(0, 10)
+contentPadding.PaddingBottom = UDim.new(0, 10)
+contentPadding.PaddingLeft = UDim.new(0, 10)
+contentPadding.PaddingRight = UDim.new(0, 10)
+contentPadding.Parent = tabContentFrame
+
+local tabContentListLayout = Instance.new("UIListLayout")
+tabContentListLayout.Padding = UDim.new(0, 10)
+tabContentListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabContentListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabContentListLayout.Parent = tabContentFrame
 
 -- =================================================================
 -- === Tab Content Creation ========================================
 -- =================================================================
 local contentFrames = {}
 local tabButtons = {}
+local activeTabName = nil
 
 local function createTabButton(name: string, accentColor: Color3, layoutOrder: number)
 	local button = Instance.new("TextButton")
@@ -363,6 +374,7 @@ local function createTabButton(name: string, accentColor: Color3, layoutOrder: n
 			TweenService:Create(otherButton, tweenInfo, {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1), TextColor3 = FONT_COLOR}):Play()
 		end
 		contentFrame.Visible = true
+		activeTabName = name
 		TweenService:Create(button, tweenInfo, {BackgroundColor3 = accentColor, TextColor3 = FONT_COLOR:Lerp(Color3.new(0,0,0), 0.5)}):Play()
 	end)
 	
@@ -375,6 +387,7 @@ end
 -- Boss Status Tab
 local bossContentFrame = createTabButton("Boss Status", BOSS_ACCENT, 1)
 bossContentFrame.Visible = true
+activeTabName = "Boss Status"
 TweenService:Create(tabButtons["Boss Status"], tweenInfo, {BackgroundColor3 = BOSS_ACCENT, TextColor3 = FONT_COLOR:Lerp(Color3.new(0,0,0), 0.5)}):Play()
 
 local statusLabel = Instance.new("TextLabel")
@@ -396,7 +409,7 @@ end
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui.Parent then break end
-		if enemiesFolder then
+		if activeTabName == "Boss Status" and enemiesFolder then
 			local sawBoss = enemiesFolder:FindFirstChild("Saw")
 			if sawBoss and sawBoss:IsA("Model") then
 				statusLabel.Text = "Bosses spawned!"
@@ -510,7 +523,7 @@ end)
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui.Parent then break end
-		if isFarmLevelActive then
+		if activeTabName == "Farm Level" and isFarmLevelActive then
 			local dataFolder = player:FindFirstChild("Data")
 			if dataFolder then
 				local levelValue = dataFolder:FindFirstChild("Level")
@@ -587,7 +600,7 @@ end
 task.spawn(function()
 	while task.wait(1) do
 		if not screenGui.Parent then break end
-		if isFruitFinderActive and not tweeningToFruit and myRootPart then
+		if activeTabName == "Fruit Finder" and isFruitFinderActive and not tweeningToFruit and myRootPart then
 			local nearestFruit = findNearestFruit()
 			if nearestFruit then
 				local fruitPosition = if nearestFruit:IsA("Model") then nearestFruit.PrimaryPart.Position else nearestFruit.Handle.Position
@@ -618,7 +631,7 @@ task.spawn(function()
 				fruitStatusLabel.Text = "Searching for fruits..."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
 			end
-		elseif not isFruitFinderActive then
+		elseif activeTabName == "Fruit Finder" and not isFruitFinderActive then
 			fruitStatusLabel.Text = "Fruit finder is off."
 			fruitStatusLabel.TextColor3 = FONT_COLOR
 		end
@@ -822,7 +835,7 @@ RunService.RenderStepped:Connect(function()
 	local isTracingActive = playerCheckboxState["Player Tracing"]
 	if isPlayerLabelEspActive then updatePlayerLabels() else for _, label in pairs(playerLabels) do label.Visible = false end end
 	if isTracingActive then updatePlayerTracers() else for _, tracer in pairs(playerTracers) do tracer.Transparency = 1 end end
-	if npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"] then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end
+	if activeTabName == "ESP" and (npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"]) then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end
 end)
 
 nukeButton.MouseButton1Click:Connect(function() 
