@@ -115,7 +115,7 @@ local function createTitleBar(parent: Instance, title: string)
 	titleLabel.TextColor3 = FONT_COLOR
 	titleLabel.TextScaled = true
 	titleLabel.Font = TITLE_FONT
-	titleLabel.Text = title
+	titleLabel.Text = "Enhanced Menu"
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	titleLabel.Parent = titleBar
