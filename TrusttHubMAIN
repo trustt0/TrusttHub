@@ -4,8 +4,7 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version includes the full UI, with a two-panel tabbed layout and a corrected
-	minimization feature, a new dynamic notification system, and an adjustment to the
-	vertical positioning of the ESP labels.
+	minimization feature, and a much more reliable dynamic notification system.
 ]]
 
 -- SERVICES
@@ -40,7 +39,7 @@ local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
 local TWEEN_SPEED = 100
-local ESP_VERTICAL_OFFSET = 10 -- Adjusted vertical offset for ESP labels
+local ESP_VERTICAL_OFFSET = 20 -- Adjusted vertical offset for ESP labels for better visibility
 
 -- Get the player's PlayerGui to store the UI
 local player = Players.LocalPlayer
@@ -454,21 +453,24 @@ local function createNotification(message: string, duration: number?)
 	closeButton.TextColor3 = FONT_COLOR
 	closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	closeButton.Parent = notificationFrame
-	closeButton.MouseButton1Click:Connect(function()
-		TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(1, 20, 0.9, 0)}):Play()
-		task.wait(0.5)
+	
+	local tweenInInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	local tweenOutInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, duration or 5)
+
+	local tweenIn = TweenService:Create(notificationFrame, tweenInInfo, {Position = UDim2.new(1, -320, 0.9, 0)})
+	local tweenOut = TweenService:Create(notificationFrame, tweenOutInfo, {Position = UDim2.new(1, 20, 0.9, 0)})
+
+	-- Handle the tweening logic in a separate task so it doesn't block the main thread.
+	task.spawn(function()
+		tweenIn:Play()
+		tweenIn.Completed:Wait()
+		tweenOut:Play()
+		tweenOut.Completed:Wait()
 		notificationFrame:Destroy()
 	end)
 
-	local tweenIn = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(1, -320, 0.9, 0)})
-	local tweenOut = TweenService:Create(notificationFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, duration or 5), {Position = UDim2.new(1, 20, 0.9, 0)})
-
-	tweenIn:Play()
-	tweenIn.Completed:Wait() -- Wait for the 'in' tween to finish before starting the 'out' tween
-
-	tweenOut:Play()
-	tweenOut.Completed:Connect(function()
-		notificationFrame:Destroy()
+	closeButton.MouseButton1Click:Connect(function()
+		tweenOut:Play()
 	end)
 end
 
@@ -874,7 +876,7 @@ local function updatePlayerLabels()
 			continue
 		end
 		local rootPart = character.HumanoidRootPart
-		-- Adjusted vertical offset to 10
+		-- Adjusted vertical offset to 20
 		local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, ESP_VERTICAL_OFFSET, 0))
 		if onScreen then
 			local labelText = ""
@@ -993,7 +995,7 @@ local function updateNpcLabels()
 				existingNpcs[npc] = true
 				if not npcLabels[npc] then npcLabels[npc] = createNpcLabel(npc.Name) end
 				local label = npcLabels[npc]
-				-- Adjusted vertical offset to 10
+				-- Adjusted vertical offset to 20
 				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, ESP_VERTICAL_OFFSET, 0))
 				if onScreen then
 					label.Position = UDim2.new(0, screenPos.X - label.AbsoluteSize.X / 2, 0, screenPos.Y - label.AbsoluteSize.Y / 2)
