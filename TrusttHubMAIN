@@ -1026,7 +1026,7 @@ local function findNearestFruitPart()
       return
     end
     
-    local targetPart = selectedIsland:FindFirstChildOfClass("BasePart")
+    local targetPart = selectedIsland:FindFirstChildWhichIsA("BasePart")
     if not targetPart then
       teleportStatusLabel.Text = "Selected island model has no parts to teleport to!"
       teleportStatusLabel.TextColor3 = BOSS_ACCENT
