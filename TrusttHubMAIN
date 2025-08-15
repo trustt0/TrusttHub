@@ -45,7 +45,6 @@ local ESP_VERTICAL_OFFSET = 20 -- Adjusted vertical offset for ESP labels for be
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
-local cameraModule = player.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("CameraModule")
 
 -- Create a container for the tracers
 local TracerContainer = Instance.new("Folder")
@@ -1060,83 +1059,93 @@ for name, cf in pairs(locations) do
 end
 
 -- Teleport Logic
-local isCurrentlyTeleporting = false
 local currentTeleportTween = nil
 local currentCameraTween = nil
 
 teleportToggleButton.MouseButton1Click:Connect(function()
-	if isCurrentlyTeleporting then
-		print("Teleport already in progress. Ignoring button press.")
-		teleportStatusLabel.Text = "Teleport already in progress..."
-		teleportStatusLabel.TextColor3 = FONT_COLOR
-		return
-	end
+	local isCurrentlyEnabled = teleportCheckmark.Visible
+	local newEnabledState = not isCurrentlyEnabled
 
-	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not myRootPart then
-		print("Could not find character to teleport!")
-		teleportStatusLabel.Text = "Could not find character to teleport!"
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-		return
-	end
-	
-	if not selectedLocation then
-		print("Please select a location first.")
-		teleportStatusLabel.Text = "Please select a location first."
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-		return
-	end
-	
-	local targetCFrame = locations[selectedLocation]
-	if not targetCFrame then
-		print(selectedLocation .. " coordinates not found!")
-		teleportStatusLabel.Text = selectedLocation .. " coordinates not found!"
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-		return
-	end
-	
-	isCurrentlyTeleporting = true
-	teleportCheckmark.Visible = true
-	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = TELEPORT_ACCENT}):Play()
+	teleportCheckmark.Visible = newEnabledState
+	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if newEnabledState then TELEPORT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
 
-	local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
-	local tweenTime = distance / currentTeleportSpeed
-
-	teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
-	teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
-
-	-- CINEMATIC CAMERA TWEEN
-	-- Step 1: Disable the default camera script to take control.
-	cameraModule.Enabled = false
-	camera.CameraType = Enum.CameraType.Scriptable
-	
-	local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
-	currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = cameraTargetCFrame})
-	currentCameraTween:Play()
-	
-	currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-	
-	currentTeleportTween.Completed:Connect(function(state)
-		currentTeleportTween = nil
-		isCurrentlyTeleporting = false
-		if state == Enum.TweenStatus.Completed then
-			teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
-			teleportStatusLabel.TextColor3 = FONT_COLOR
-		elseif state == Enum.TweenStatus.Canceled then
-			teleportStatusLabel.Text = "Teleport canceled."
-			teleportStatusLabel.TextColor3 = FONT_COLOR
+	if newEnabledState then
+		-- START TELEPORT
+		if currentTeleportTween then
+			currentTeleportTween:Cancel()
 		end
-		-- Step 2: Restore the camera's state and re-enable the camera script.
-		camera.CameraType = Enum.CameraType.Custom
-		cameraModule.Enabled = true
-		currentCameraTween = nil
 
-		-- Reset UI state
-		teleportCheckmark.Visible = false
-		TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
-	end)
-	
-	currentTeleportTween:Play()
+		local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not myRootPart then
+			teleportStatusLabel.Text = "Could not find character to teleport!"
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		if not selectedLocation then
+			teleportStatusLabel.Text = "Please select a location first."
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		local targetCFrame = locations[selectedLocation]
+		if not targetCFrame then
+			teleportStatusLabel.Text = selectedLocation .. " coordinates not found!"
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
+		local tweenTime = distance / currentTeleportSpeed
+
+		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
+		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+
+		-- CINEMATIC CAMERA TWEEN
+		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
+		camera.CameraType = Enum.CameraType.Scriptable
+		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = cameraTargetCFrame})
+		currentCameraTween:Play()
+		
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		
+		currentTeleportTween.Completed:Connect(function(state)
+			currentTeleportTween = nil
+			if state == Enum.TweenStatus.Completed then
+				teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
+				teleportStatusLabel.TextColor3 = FONT_COLOR
+			elseif state == Enum.TweenStatus.Canceled then
+				teleportStatusLabel.Text = "Teleport canceled."
+				teleportStatusLabel.TextColor3 = FONT_COLOR
+			end
+			-- Restore camera control
+			camera.CameraType = Enum.CameraType.Custom
+			currentCameraTween = nil
+
+			-- The toggle is already turned off when this runs
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+		end)
+		
+		currentTeleportTween:Play()
+	else
+		-- CANCEL TELEPORT
+		if currentTeleportTween then
+			currentTeleportTween:Cancel()
+			currentTeleportTween = nil
+		end
+		if currentCameraTween then
+			currentCameraTween:Cancel()
+			currentCameraTween = nil
+			camera.CameraType = Enum.CameraType.Custom
+		end
+	end
 end)
 
 -- =================================================================
