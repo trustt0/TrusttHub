@@ -1060,8 +1060,6 @@ end
 
 -- Teleport Logic
 local currentTeleportTween = nil
-local currentCameraTween = nil
-
 teleportToggleButton.MouseButton1Click:Connect(function()
 	local isCurrentlyEnabled = teleportCheckmark.Visible
 	local newEnabledState = not isCurrentlyEnabled
@@ -1106,12 +1104,6 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
-
-		-- CINEMATIC CAMERA TWEEN
-		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
-		camera.CameraType = Enum.CameraType.Scriptable
-		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = cameraTargetCFrame})
-		currentCameraTween:Play()
 		
 		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
 		
@@ -1124,10 +1116,7 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 				teleportStatusLabel.Text = "Teleport canceled."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
 			end
-			-- Restore camera control
-			camera.CameraType = Enum.CameraType.Custom
-			currentCameraTween = nil
-
+			
 			-- The toggle is already turned off when this runs
 			teleportCheckmark.Visible = false
 			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
@@ -1139,11 +1128,6 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		if currentTeleportTween then
 			currentTeleportTween:Cancel()
 			currentTeleportTween = nil
-		end
-		if currentCameraTween then
-			currentCameraTween:Cancel()
-			currentCameraTween = nil
-			camera.CameraType = Enum.CameraType.Custom
 		end
 	end
 end)
