@@ -1,11 +1,12 @@
 --!strict
 --[[
-	A LocalScript to create a single, modern, enhanced, and dynamic UI menu.
-	This script is designed to be placed in StarterPlayerScripts.
+	[cite_start]A LocalScript to create a single, modern, enhanced, and dynamic UI menu. [cite: 1]
+[cite_start]This script is designed to be placed in StarterPlayerScripts. [cite: 2]
 	
 	This version includes the full UI, with a two-panel tabbed layout and a corrected
-	minimization feature. The "Tween to Fruits" button now has a question mark (?)
-	that displays a tooltip when the mouse hovers over it.
+	[cite_start]minimization feature. [cite: 2]
+The "Tween to Fruits" button now has a question mark (?)
+	[cite_start]that displays a tooltip when the mouse hovers over it. [cite: 3]
 ]]
 
 -- SERVICES
@@ -31,7 +32,8 @@ local ACCENT_COLOR = Color3.fromRGB(170, 85, 255) -- Vibrant purple accent
 
 -- Tab-specific colors for visual separation
 local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
-local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
+local ESP_ACCENT = Color3.fromRGB(85, 255,
+[cite_start]85) -- Green [cite: 5]
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
 local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
 
@@ -60,7 +62,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
 -- =================================================================
--- === UI Utility Functions ========================================
+[cite_start]-- === UI Utility Functions ======================================== [cite: 6]
 -- =================================================================
 
 -- Creates a main container frame with a modern, frosted glass look
@@ -101,7 +103,7 @@ local function createTitleBar(parent: Instance, title: string)
 	titleBar.Name = "TitleBar"
 	titleBar.Size = UDim2.new(1, 0, 0, MINIMIZED_HEIGHT)
 	titleBar.BackgroundTransparency = 1
-	titleBar.BorderSizePixel = 0
+	[cite_start]titleBar.BorderSizePixel = 0 [cite: 7]
 	titleBar.Parent = parent
 
 	local gradient = Instance.new("UIGradient")
@@ -143,7 +145,8 @@ local function createTitleBar(parent: Instance, title: string)
 	local nukeButton = Instance.new("TextButton")
 	nukeButton.Name = "NukeButton"
 	nukeButton.Size = UDim2.new(0, 30, 0, 30)
-	nukeButton.Position = UDim2.new(1, -40, 0.5, -15)
+	nukeButton.Position =
+	[cite_start]UDim2.new(1, -40, 0.5, -15) [cite: 8]
 	nukeButton.BackgroundColor3 = BOSS_ACCENT:Lerp(Color3.new(0,0,0), 0.5)
 	nukeButton.BorderSizePixel = 0
 	nukeButton.Text = "X"
@@ -176,7 +179,7 @@ local function createTabButton(parent: Instance, name: string, accentColor: Colo
 	button.BorderSizePixel = 0
 	button.TextColor3 = FONT_COLOR
 	button.Text = name
-	button.TextScaled = true
+	[cite_start]button.TextScaled = true [cite: 9]
 	button.Font = TITLE_FONT
 	button.Parent = parent
 
@@ -215,7 +218,8 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 
 	local toggleBox = Instance.new("Frame")
 	toggleBox.Name = "ToggleBox"
-	toggleBox.Size = UDim2.new(0, 20, 0, 20)
+	toggleBox.Size =
+	[cite_start]UDim2.new(0, 20, 0, 20) [cite: 10]
 	toggleBox.Position = UDim2.new(0, 10, 0.5, -10)
 	toggleBox.BackgroundColor3 = if initialActiveState then accentColor else Color3.fromRGB(80, 80, 80)
 	toggleBox.BorderSizePixel = 1
@@ -251,7 +255,8 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	container.MouseEnter:Connect(function() TweenService:Create(container, TweenInfo.new(0.2), {BackgroundTransparency = 0.25}):Play() end)
 	container.MouseLeave:Connect(function() TweenService:Create(container, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play() end)
 
-	return container, button, checkmark, toggleBox
+	return container,
+	[cite_start]button, checkmark, toggleBox [cite: 11]
 end
 
 -- =================================================================
@@ -293,7 +298,8 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Create the main UI elements
+-- Create the
+[cite_start]main UI elements [cite: 12]
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
 local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced Menu")
 setupDrag(mainFrame, titleBar)
@@ -331,7 +337,8 @@ tabPadding.PaddingTop = UDim.new(0, 10)
 tabPadding.PaddingBottom = UDim.new(0, 10)
 tabPadding.Parent = tabContainer
 
--- Tab content container on the right
+-- Tab content container on
+[cite_start]the right [cite: 13]
 local tabContentParent = Instance.new("Frame")
 tabContentParent.Name = "TabContentParent"
 tabContentParent.Size = UDim2.new(1, -TAB_WIDTH, 1, 0)
@@ -373,7 +380,8 @@ end)
 -- Tab-specific logic
 local contentFrames = {}
 local tabButtons = {}
-local activeTabName = nil
+local activeTabName
+[cite_start]= nil [cite: 14]
 
 local function createTabAndContent(name: string, accentColor: Color3, layoutOrder: number)
 	local button = createTabButton(tabContainer, name, accentColor, layoutOrder)
@@ -411,7 +419,8 @@ end
 local bossContentFrame = createTabAndContent("Boss Status", BOSS_ACCENT, 1)
 bossContentFrame.Visible = true
 activeTabName = "Boss Status"
-TweenService:Create(tabButtons["Boss Status"], tweenInfo, {BackgroundColor3 = BOSS_ACCENT, TextColor3 = FONT_COLOR}):Play()
+TweenService:Create(tabButtons["Boss Status"], tweenInfo, {BackgroundColor3 = BOSS_ACCENT, TextColor3
+[cite_start]= FONT_COLOR}):Play() [cite: 15]
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
@@ -427,7 +436,7 @@ statusLabel.Parent = bossContentFrame
 	
 local enemiesFolder = Workspace:FindFirstChild("Enemies")
 if not enemiesFolder then
-	statusLabel.Text = "No enemies folder found!"
+	[cite_start]statusLabel.Text = "No enemies folder found!" [cite: 16]
 end
 task.spawn(function()
 	while task.wait(1) do
@@ -466,7 +475,8 @@ local playerEspTypes = {
 }
 local playerCheckboxState = { ["Username ESP"] = false, ["Distance ESP"] = false, ["Player Tracing"] = false }
 local playerEspLayoutOrder = 2
-local function createPlayerEspCheckbox(espName)
+local function
+[cite_start]createPlayerEspCheckbox(espName) [cite: 17]
 	local container, button, checkmark, toggleBox = createToggleButton(espContentFrame, espName, ACCENT_COLOR, false, playerEspLayoutOrder)
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
@@ -497,7 +507,8 @@ local npcTypes = {
 }
 local npcCheckboxState = { ["Set Home Point"] = false, ["Boat Dealer"] = false }
 local function createNpcEspCheckbox(npcName)
-	local container, button, checkmark, toggleBox = createToggleButton(espContentFrame, npcName, ESP_ACCENT, false, playerEspLayoutOrder)
+	local container, button, checkmark, toggleBox = createToggleButton(espContentFrame,
+	[cite_start]npcName, ESP_ACCENT, false, playerEspLayoutOrder) [cite: 18]
 	playerEspLayoutOrder += 1
 	button.MouseButton1Click:Connect(function()
 		local newState = not npcCheckboxState[npcName]
@@ -529,7 +540,8 @@ local levelStatusLabel = Instance.new("TextLabel")
 levelStatusLabel.Name = "LevelStatusLabel"
 levelStatusLabel.Size = UDim2.new(1, 0, 1, 0)
 levelStatusLabel.BackgroundTransparency = 1
-levelStatusLabel.TextColor3 = FONT_COLOR
+levelStatusLabel.TextColor3 =
+[cite_start]FONT_COLOR [cite: 19]
 levelStatusLabel.Text = "Level Status"
 levelStatusLabel.TextScaled = true
 levelStatusLabel.Font = TITLE_FONT
@@ -569,7 +581,8 @@ task.spawn(function()
 end)
 
 -- Fruit Finder Tab
-local fruitFinderContentFrame = createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4)
+local fruitFinderContentFrame =
+[cite_start]createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4) [cite: 20]
 local fruitFinderToggle, fruitFinderButton, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
 local isFruitFinderActive = false
 local isTeleporting = false
@@ -581,11 +594,14 @@ fruitStatusLabel.BackgroundTransparency = 1
 fruitStatusLabel.TextColor3 = FONT_COLOR
 fruitStatusLabel.TextScaled = true
 fruitStatusLabel.Font = TITLE_FONT
-fruitStatusLabel.Text = "Fruit finder is off."
+[cite_start]fruitStatusLabel.Text = "Fruit finder is off." [cite: 21]
 fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 fruitStatusLabel.Parent = fruitFinderContentFrame
 
 local tweenButtonContainer, tweenToFruitButton, tweenToFruitCheckmark, tweenToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Tween to Fruits", ACCENT_COLOR, false, 3)
+
+local instantButtonContainer, instantToFruitButton, instantToFruitCheckmark, instantToFruitToggleBox = createToggleButton(fruitFinderContentFrame, "Instant Teleport", ACCENT_COLOR, false, 4)
+
 
 -- Separate container for the question mark and its tooltip
 local questionMarkContainer = Instance.new("Frame")
@@ -600,7 +616,7 @@ questionMarkLabel.Name = "QuestionMark"
 questionMarkLabel.Size = UDim2.new(1, 0, 1, 0)
 questionMarkLabel.BackgroundTransparency = 1
 questionMarkLabel.TextColor3 = FONT_COLOR
-questionMarkLabel.Text = "?"
+[cite_start]questionMarkLabel.Text = "?" [cite: 22]
 questionMarkLabel.TextScaled = true
 questionMarkLabel.Font = TITLE_FONT
 questionMarkLabel.Parent = questionMarkContainer
@@ -626,6 +642,7 @@ tooltipCorner.CornerRadius = UDim.new(0, 5)
 tooltipCorner.Parent = tooltip
 
 local isTweenToFruitActive = false
+local isInstantToFruitActive = false
 
 -- Hover events for the question mark
 questionMarkContainer.MouseEnter:Connect(function()
@@ -640,7 +657,8 @@ local function findNearestFruitPart()
 	local nearestDistance = math.huge
 	
 	for _, child in ipairs(Workspace:GetChildren()) do
-		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit", 1, true) then
+		if (child:IsA("Model") or child:IsA("Tool")) and string.find(child.Name, "Fruit",
+		[cite_start]1, true) then [cite: 23]
 			local fruitPart = nil
 			
 			if child:IsA("Model") and child.PrimaryPart then
@@ -679,7 +697,8 @@ local function enableFruitFinder()
 					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
 					local tweenTime = distance / TWEEN_SPEED
 					
-					fruitStatusLabel.Text = "Fruit found! Smooth moving to location."
+					fruitStatusLabel.Text = "Fruit found!
+[cite_start]Smooth moving to location." [cite: 24]
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
@@ -687,13 +706,16 @@ local function enableFruitFinder()
 					
 					tween.Completed:Wait()
 					isTeleporting = false
-				else
+				elseif isInstantToFruitActive then
 					fruitStatusLabel.Text = "Fruit found! Teleporting to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
 					
 					task.wait() -- Wait one frame
+					isTeleporting = false
+				else
+					fruitStatusLabel.Text = "Fruit found!"
 					isTeleporting = false
 				end
 				
@@ -728,6 +750,10 @@ fruitFinderButton.MouseButton1Click:Connect(function()
 		isTweenToFruitActive = false
 		tweenToFruitCheckmark.Visible = false
 		TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+		
+		isInstantToFruitActive = false
+		instantToFruitCheckmark.Visible = false
+		TweenService:Create(instantToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 	end
 end)
 
@@ -736,14 +762,34 @@ tweenToFruitButton.MouseButton1Click:Connect(function()
 		return
 	end
 	isTweenToFruitActive = not isTweenToFruitActive
+	isInstantToFruitActive = false -- Deactivate instant if tween is toggled
+	
 	tweenToFruitCheckmark.Visible = isTweenToFruitActive
 	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isTweenToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+	
+	instantToFruitCheckmark.Visible = false
+	TweenService:Create(instantToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+end)
+
+instantToFruitButton.MouseButton1Click:Connect(function()
+	if not isFruitFinderActive then
+		return
+	end
+	isInstantToFruitActive = not isInstantToFruitActive
+	isTweenToFruitActive = false -- Deactivate tween if instant is toggled
+
+	instantToFruitCheckmark.Visible = isInstantToFruitActive
+	TweenService:Create(instantToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isInstantToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+
+	tweenToFruitCheckmark.Visible = false
+	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
 local tweenSpeedFrame = Instance.new("Frame")
 tweenSpeedFrame.Name = "TweenSpeedFrame"
 tweenSpeedFrame.LayoutOrder = 4
-tweenSpeedFrame.Size = UDim2.new(1, -20, 0, 40)
+tweenSpeedFrame.Size = UDim2.new(1, -20,
+[cite_start]0, 40) [cite: 26]
 tweenSpeedFrame.BackgroundColor3 = FROSTED_BACKGROUND
 tweenSpeedFrame.BackgroundTransparency = 0.4
 tweenSpeedFrame.BorderSizePixel = 0
@@ -782,7 +828,8 @@ local minSpeed = 50
 local maxSpeed = 300
 local sliderBar = Instance.new("Frame")
 sliderBar.Name = "SliderBar"
-sliderBar.Size = UDim2.new((TWEEN_SPEED - minSpeed) / (maxSpeed - minSpeed), 0, 1, 0)
+sliderBar.Size = UDim2.new((TWEEN_SPEED - minSpeed) /
+(maxSpeed - minSpeed)[cite_start], 0, 1, 0) [cite: 27]
 sliderBar.BackgroundColor3 = FRUIT_ACCENT
 sliderBar.BorderSizePixel = 0
 sliderBar.Parent = sliderFrame
@@ -827,7 +874,8 @@ local npcsFolder = Workspace:WaitForChild("NPCs")
 local function createPlayerLabel()
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(0, 100, 0, 20)
+	label.Size = UDim2.new(0,
+	[cite_start]100, 0, 20) [cite: 28]
 	label.TextColor3 = TRACER_COLOR
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	label.TextStrokeTransparency = 0.5
@@ -859,7 +907,8 @@ local function updatePlayerLabels()
 			local labelText = ""
 			local labelWidth = 100
 			if playerCheckboxState["Username ESP"] and playerCheckboxState["Distance ESP"] then
-				labelText = p.Name .. " (" .. tostring(math.floor((rootPart.Position - myRootPart.Position).Magnitude * 0.28 * 10) / 10) .. "m)"
+				labelText = p.Name .. " (" .. tostring(math.floor((rootPart.Position - myRootPart.Position).Magnitude * 0.28 * 10) / 10) ..
+				[cite_start]"m)" [cite: 29]
 				labelWidth = 250
 			elseif playerCheckboxState["Username ESP"] then
 				labelText = p.Name
@@ -897,7 +946,8 @@ local function createPlayerTracer()
 	tracer.Parent = TracerContainer
 	local mesh = Instance.new("CylinderMesh")
 	mesh.Parent = tracer
-	return tracer
+	return
+	[cite_start]tracer [cite: 30]
 end
 local function updatePlayerTracer(tracer, targetPart, myRootPart)
 	if not myRootPart or not targetPart or not targetPart.Parent then
@@ -928,7 +978,8 @@ local function updatePlayerTracers()
 					playerTracers[p] = tracer
 				end
 				updatePlayerTracer(tracer, targetPart, myRootPart)
-				playersWithTracers[p] = true
+				playersWithTracers[p]
+				[cite_start]= true [cite: 31]
 			end
 		end
 	end
@@ -970,7 +1021,9 @@ local function updateNpcLabels()
 			local distance = (myRootPart.Position - rootPart.Position).Magnitude
 			if distance <= NPC_ESP_DISTANCE then
 				existingNpcs[npc] = true
-				if not npcLabels[npc] then npcLabels[npc] = createNpcLabel(npc.Name) end
+				if not npcLabels[npc] then
+				[cite_start]npcLabels[npc] = createNpcLabel(npc.Name) [cite: 32]
+				end
 				local label = npcLabels[npc]
 				-- Adjusted vertical offset to 20
 				local screenPos, onScreen = Workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position + Vector3.new(0, ESP_VERTICAL_OFFSET, 0))
@@ -1007,7 +1060,8 @@ end)
 createPlayerLabelsForExistingPlayers()
 
 RunService.RenderStepped:Connect(function()
-	myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	myRootPart = player.Character
+	[cite_start]and player.Character:FindFirstChild("HumanoidRootPart") [cite: 33]
 	if not myRootPart then return end
 	local isPlayerLabelEspActive = playerCheckboxState["Username ESP"] or playerCheckboxState["Distance ESP"]
 	local isTracingActive = playerCheckboxState["Player Tracing"]
@@ -1016,7 +1070,7 @@ RunService.RenderStepped:Connect(function()
 	if activeTabName == "ESP" and (npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"]) then updateNpcLabels() else for _, label in pairs(npcLabels) do label.Visible = false end end
 end)
 
-nukeButton.MouseButton1Click:Connect(function() 
+nukeButton.MouseButton1Click:Connect(function()
 	removeAllPlayerLabels()
 	removeAllNpcLabels()
 	removeAllPlayerTracers()
