@@ -57,6 +57,14 @@ screenGui.Name = "UnifiedMenu"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
+-- Notes
+local notes = {
+	{text = "Note: A powerful new menu has been loaded.", color = ACCENT_COLOR},
+	{text = "Note: All scripts are now running smoothly.", color = ESP_ACCENT},
+	{text = "Note: Menu functions are fully operational.", color = FRUIT_ACCENT},
+}
+local chosenNote = notes[math.random(1, #notes)]
+
 ---
 ## UI Utility Functions
 ---
@@ -295,6 +303,20 @@ end)
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
 local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced Menu")
 setupDrag(mainFrame, titleBar)
+
+-- Add a changing note to the title bar
+local noteLabel = Instance.new("TextLabel")
+noteLabel.Name = "NoteLabel"
+noteLabel.Size = UDim2.new(0, 200, 1, 0)
+noteLabel.Position = UDim2.new(0, 200, 0, 0)
+noteLabel.BackgroundTransparency = 1
+noteLabel.TextColor3 = chosenNote.color
+noteLabel.TextScaled = true
+noteLabel.Font = BODY_FONT
+noteLabel.Text = chosenNote.text
+noteLabel.TextXAlignment = Enum.TextXAlignment.Center
+noteLabel.TextYAlignment = Enum.TextYAlignment.Center
+noteLabel.Parent = titleBar
 
 local contentFrame = Instance.new("Frame")
 contentFrame.Name = "ContentFrame"
@@ -1073,7 +1095,7 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		if currentTeleportTween then
 			currentTeleportTween:Cancel()
 		end
-
+		
 		local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if not myRootPart then
 			teleportStatusLabel.Text = "Could not find character to teleport!"
@@ -1108,7 +1130,10 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 
 		-- Camera fix
 		camera.CameraType = Enum.CameraType.Scriptable
-		cameraConnection = RunService.Heartbeat:Connect(function()
+		if cameraConnection then
+			cameraConnection:Disconnect()
+		end
+		cameraConnection = RunService.RenderStepped:Connect(function()
 			if myRootPart and camera then
 				camera.CFrame = myRootPart.CFrame
 			end
@@ -1132,7 +1157,6 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			end
 			camera.CameraType = Enum.CameraType.Custom
 			
-			-- The toggle is already turned off when this runs
 			teleportCheckmark.Visible = false
 			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 		end)
