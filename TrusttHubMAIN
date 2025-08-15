@@ -1026,20 +1026,20 @@ local function findNearestFruitPart()
       return
     end
     
-    local targetPart = selectedIsland:FindFirstChildWhichIsA("BasePart")
-    if not targetPart then
+    local targetCFrame = selectedIsland:GetBoundingBox().CFrame
+    if not targetCFrame then
       teleportStatusLabel.Text = "Selected island model has no parts to teleport to!"
       teleportStatusLabel.TextColor3 = BOSS_ACCENT
       return
     end
 
-    local distance = (myRootPart.Position - targetPart.Position).Magnitude
+    local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
     local tweenTime = distance / currentTeleportSpeed
 
     teleportStatusLabel.Text = "Teleporting to " .. selectedIsland.Name .. "..."
     teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 
-    local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(targetPart.Position)})
+    local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
     tween:Play()
     
     tween.Completed:Wait()
