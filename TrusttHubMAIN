@@ -627,7 +627,8 @@ tooltipCorner.Parent = tooltip
 
 local isTweenToFruitActive = false
 local isInstantToFruitActive = false
-local searchingAnimationTask = nil
+local ellipsisCount = 0
+local lastAnimationUpdateTime = 0
 
 -- Hover events for the question mark
 questionMarkContainer.MouseEnter:Connect(function()
@@ -665,29 +666,6 @@ local function findNearestFruitPart()
 	return nearestPart
 end
 
-local function startSearchingAnimation()
-	if searchingAnimationTask then return end
-	local ellipsisCount = 0
-	local searchingBaseText = "Searching for fruits"
-	
-	searchingAnimationTask = task.spawn(function()
-		while task.wait(0.5) do
-			if not isFruitFinderActive or isTeleporting then break end
-			ellipsisCount = (ellipsisCount % 3) + 1
-			fruitStatusLabel.Text = searchingBaseText .. string.rep(".", ellipsisCount)
-			fruitStatusLabel.TextColor3 = FONT_COLOR
-		end
-		searchingAnimationTask = nil
-	end)
-end
-
-local function stopSearchingAnimation()
-	if searchingAnimationTask then
-		task.cancel(searchingAnimationTask)
-		searchingAnimationTask = nil
-	end
-end
-
 local fruitFinderConnection = nil
 local function enableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
@@ -699,13 +677,12 @@ local function enableFruitFinder()
 			local nearestFruitPart = findNearestFruitPart()
 			if nearestFruitPart then
 				isTeleporting = true
-				stopSearchingAnimation() -- Stop the animation when a fruit is found
 				
 				if isTweenToFruitActive then
 					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
 					local tweenTime = distance / TWEEN_SPEED
 					
-					fruitStatusLabel.Text = "Fruit found! Smooth tweening to location..."
+					fruitStatusLabel.Text = "Fruit found! Smooth tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
@@ -716,11 +693,10 @@ local function enableFruitFinder()
 					task.delay(2, function()
 						if isFruitFinderActive then
 							isTeleporting = false
-							startSearchingAnimation()
 						end
 					end)
 				elseif isInstantToFruitActive then
-					fruitStatusLabel.Text = "Fruit found! Instantly teleporting to location..."
+					fruitStatusLabel.Text = "Fruit found! Instantly teleporting to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
@@ -730,7 +706,6 @@ local function enableFruitFinder()
 					task.delay(2, function()
 						if isFruitFinderActive then
 							isTeleporting = false
-							startSearchingAnimation()
 						end
 					end)
 				else
@@ -738,8 +713,15 @@ local function enableFruitFinder()
 					isTeleporting = false
 				end
 				
-			elseif not searchingAnimationTask then
-				startSearchingAnimation()
+			else
+				-- Searching animation logic
+				if tick() - lastAnimationUpdateTime > 0.5 then
+					ellipsisCount = (ellipsisCount % 3) + 1
+					local searchingBaseText = "Searching for fruits"
+					fruitStatusLabel.Text = searchingBaseText .. string.rep(".", ellipsisCount)
+					fruitStatusLabel.TextColor3 = FONT_COLOR
+					lastAnimationUpdateTime = tick()
+				end
 			end
 		end
 	end)
@@ -749,7 +731,6 @@ local function disableFruitFinder()
 	if fruitFinderConnection then fruitFinderConnection:Disconnect() end
 	fruitFinderConnection = nil
 	isTeleporting = false
-	stopSearchingAnimation()
 end
 
 fruitFinderButton.MouseButton1Click:Connect(function()
