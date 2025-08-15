@@ -2,11 +2,9 @@
 --[[
 	A LocalScript to create a single, modern, enhanced, and dynamic UI menu.
 	This script is designed to be placed in StarterPlayerScripts.
-
-	This version includes the full UI, with a two-panel tabbed layout and a corrected
-	minimization feature. The "Tween to Fruits" button now has a question mark (?)
-	that displays a tooltip when the mouse hovers over it.
 ]]
+
+print("Loading Enhanced Menu...")
 
 -- SERVICES
 local Players = game:GetService("Players")
