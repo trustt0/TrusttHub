@@ -57,13 +57,8 @@ screenGui.Name = "UnifiedMenu"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
--- Notes
-local notes = {
-	{text = "Note: A powerful new menu has been loaded.", color = ACCENT_COLOR},
-	{text = "Note: All scripts are now running smoothly.", color = ESP_ACCENT},
-	{text = "Note: Menu functions are fully operational.", color = FRUIT_ACCENT},
-}
-local chosenNote = notes[math.random(1, #notes)]
+local noteText = "Updated with Camera Fixes"
+local noteColor = Color3.fromRGB(85, 255, 255) -- A consistent color for this version
 
 ---
 ## UI Utility Functions
@@ -304,16 +299,16 @@ local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
 local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced Menu")
 setupDrag(mainFrame, titleBar)
 
--- Add a changing note to the title bar
+-- Add the single note to the title bar
 local noteLabel = Instance.new("TextLabel")
 noteLabel.Name = "NoteLabel"
-noteLabel.Size = UDim2.new(0, 200, 1, 0)
-noteLabel.Position = UDim2.new(0, 200, 0, 0)
+noteLabel.Size = UDim2.new(0.5, 0, 1, 0) -- Adjusted size
+noteLabel.Position = UDim2.new(0.5, -100, 0, 0) -- Adjusted position
 noteLabel.BackgroundTransparency = 1
-noteLabel.TextColor3 = chosenNote.color
+noteLabel.TextColor3 = noteColor
 noteLabel.TextScaled = true
 noteLabel.Font = BODY_FONT
-noteLabel.Text = chosenNote.text
+noteLabel.Text = noteText
 noteLabel.TextXAlignment = Enum.TextXAlignment.Center
 noteLabel.TextYAlignment = Enum.TextYAlignment.Center
 noteLabel.Parent = titleBar
@@ -396,34 +391,28 @@ local tabButtons = {}
 local activeTabName = nil
 
 local function createTabAndContent(name: string, accentColor: Color3, layoutOrder: number)
-	local button = createTabButton(tabContainer, name, accentColor, layoutOrder)
-	local contentFrame = Instance.new("Frame")
-	contentFrame.Name = name .. "Content"
-	contentFrame.Size = UDim2.new(1, 0, 1, 0)
-	contentFrame.BackgroundTransparency = 1
-	contentFrame.Visible = false
-	contentFrame.Parent = tabContentParent
+	local button = Instance.new("TextButton")
+	button.Name = name .. "Tab"
+	button.LayoutOrder = layoutOrder
+	button.Size = UDim2.new(1, -10, 0, 50)
+	button.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
+	button.BackgroundTransparency = 0.5
+	button.BorderSizePixel = 0
+	button.TextColor3 = FONT_COLOR
+	button.Text = name
+	button.TextScaled = true
+	button.Font = TITLE_FONT
+	button.Parent = parent
 
-	local frameLayout = Instance.new("UIListLayout")
-	frameLayout.Padding = UDim.new(0, 10)
-	frameLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	frameLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	frameLayout.Parent = contentFrame
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = button
 
-	button.MouseButton1Click:Connect(function()
-		for _, frame in pairs(contentFrames) do frame.Visible = false end
-		for _, otherButton in pairs(tabButtons) do
-			TweenService:Create(otherButton, tweenInfo, {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)}):Play()
-		end
-		contentFrame.Visible = true
-		activeTabName = name
-		TweenService:Create(button, tweenInfo, {BackgroundColor3 = accentColor, TextColor3 = FONT_COLOR}):Play()
-	end)
+	-- Hover effects
+	button.MouseEnter:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.25)}):Play() end)
+	button.MouseLeave:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
 	
-	contentFrames[name] = contentFrame
-	tabButtons[name] = button
-
-	return contentFrame
+	return button
 end
 
 
