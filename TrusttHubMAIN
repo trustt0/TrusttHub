@@ -34,6 +34,7 @@
   local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
   local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
   local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
+  local TELEPORT_ACCENT = Color3.fromRGB(85, 170, 255) -- Blue for teleport
 
   local NPC_ESP_DISTANCE = 500
   local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
@@ -684,7 +685,7 @@ local function findNearestFruitPart()
   					fruitStatusLabel.Text = "Fruit found! Smooth tweening to location."
   					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
   
-  					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {Cframe = CFrame.new(nearestFruitPart.Position)})
+  					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
   					tween:Play()
   
   					tween.Completed:Wait()
@@ -850,6 +851,203 @@ local function findNearestFruitPart()
   		updateTweenSpeed(input)
   	end
   end)
+
+  -- Teleport Tab
+  local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
+  
+  local teleportStatusLabel = Instance.new("TextLabel")
+  teleportStatusLabel.Name = "TeleportStatusLabel"
+  teleportStatusLabel.LayoutOrder = 1
+  teleportStatusLabel.Size = UDim2.new(1, -20, 0, 50)
+  teleportStatusLabel.BackgroundTransparency = 1
+  teleportStatusLabel.TextColor3 = FONT_COLOR
+  teleportStatusLabel.TextScaled = true
+  teleportStatusLabel.Font = TITLE_FONT
+  teleportStatusLabel.Text = "Select an island to teleport to."
+  teleportStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+  teleportStatusLabel.Parent = teleportContentFrame
+
+  local islandListFrame = Instance.new("Frame")
+  islandListFrame.Name = "IslandListFrame"
+  islandListFrame.LayoutOrder = 2
+  islandListFrame.Size = UDim2.new(1, -20, 0, 50)
+  islandListFrame.BackgroundColor3 = FROSTED_BACKGROUND
+  islandListFrame.BackgroundTransparency = 0.5
+  islandListFrame.BorderSizePixel = 0
+  islandListFrame.Parent = teleportContentFrame
+  local listLayout = Instance.new("UIListLayout")
+  listLayout.Padding = UDim.new(0, 5)
+  listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+  listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+  listLayout.Parent = islandListFrame
+  local islandListCorner = Instance.new("UICorner")
+  islandListCorner.CornerRadius = UDim.new(0, 8)
+  islandListCorner.Parent = islandListFrame
+  
+  local islandOptions = {
+    Windmill = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Windmill")
+  }
+
+  local selectedIsland = nil
+  
+  local function createIslandButton(islandName, islandInstance)
+    if not islandInstance then return end
+    local button = Instance.new("TextButton")
+    button.Name = islandName .. "Button"
+    button.Size = UDim2.new(1, -10, 0, 30)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.Text = islandName
+    button.TextColor3 = FONT_COLOR
+    button.Font = BODY_FONT
+    button.TextScaled = true
+    button.Parent = islandListFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = button
+
+    button.MouseEnter:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = TELEPORT_ACCENT:Lerp(Color3.new(0,0,0), 0.5)}):Play() end)
+  	button.MouseLeave:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play() end)
+
+    button.MouseButton1Click:Connect(function()
+      selectedIsland = islandInstance
+      teleportStatusLabel.Text = "Selected island: " .. islandName
+      teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+    end)
+  end
+
+  for islandName, islandInstance in pairs(islandOptions) do
+    createIslandButton(islandName, islandInstance)
+  end
+
+  local teleportButton = Instance.new("TextButton")
+  teleportButton.Name = "TeleportButton"
+  teleportButton.LayoutOrder = 3
+  teleportButton.Size = UDim2.new(1, -20, 0, 50)
+  teleportButton.BackgroundColor3 = ACCENT_COLOR
+  teleportButton.Text = "Teleport to selected island"
+  teleportButton.TextColor3 = FONT_COLOR
+  teleportButton.TextScaled = true
+  teleportButton.Font = TITLE_FONT
+  teleportButton.Parent = teleportContentFrame
+
+  local teleButtonCorner = Instance.new("UICorner")
+  teleButtonCorner.CornerRadius = UDim.new(0, 8)
+  teleButtonCorner.Parent = teleportButton
+
+  local teleportSpeedFrame = Instance.new("Frame")
+  teleportSpeedFrame.Name = "TeleportSpeedFrame"
+  teleportSpeedFrame.LayoutOrder = 4
+  teleportSpeedFrame.Size = UDim2.new(1, -20, 0, 40)
+  teleportSpeedFrame.BackgroundColor3 = FROSTED_BACKGROUND
+  teleportSpeedFrame.BackgroundTransparency = 0.4
+  teleportSpeedFrame.BorderSizePixel = 0
+  teleportSpeedFrame.Parent = teleportContentFrame
+
+  local teleportSpeedCorner = Instance.new("UICorner")
+  teleportSpeedCorner.CornerRadius = UDim.new(0, 8)
+  teleportSpeedCorner.Parent = teleportSpeedFrame
+
+  local teleSpeedLabel = Instance.new("TextLabel")
+  teleSpeedLabel.Name = "SpeedLabel"
+  teleSpeedLabel.Size = UDim2.new(0.5, -5, 1, 0)
+  teleSpeedLabel.Position = UDim2.new(0, 5, 0, 0)
+  teleSpeedLabel.BackgroundTransparency = 1
+  teleSpeedLabel.TextColor3 = FONT_COLOR
+  teleSpeedLabel.Text = "Tween Speed: " .. TWEEN_SPEED
+  teleSpeedLabel.TextScaled = true
+  teleSpeedLabel.Font = BODY_FONT
+  teleSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+  teleSpeedLabel.Parent = teleportSpeedFrame
+
+  local teleportSliderFrame = Instance.new("Frame")
+  teleportSliderFrame.Name = "SliderFrame"
+  teleportSliderFrame.Size = UDim2.new(0.5, -10, 0, 10)
+  teleportSliderFrame.Position = UDim2.new(0.5, 5, 0.5, -5)
+  teleportSliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+  teleportSliderFrame.BorderSizePixel = 1
+  teleportSliderFrame.BorderColor3 = BORDER_COLOR
+  teleportSliderFrame.Parent = teleportSpeedFrame
+
+  local teleportSliderCorner = Instance.new("UICorner")
+  teleportSliderCorner.CornerRadius = UDim.new(0, 5)
+  teleportSliderCorner.Parent = teleportSliderFrame
+
+  local minTeleportSpeed = 50
+  local maxTeleportSpeed = 300
+  local teleportSliderBar = Instance.new("Frame")
+  teleportSliderBar.Name = "SliderBar"
+  teleportSliderBar.Size = UDim2.new((TWEEN_SPEED - minTeleportSpeed) / (maxTeleportSpeed - minTeleportSpeed), 0, 1, 0)
+  teleportSliderBar.BackgroundColor3 = TELEPORT_ACCENT
+  teleportSliderBar.BorderSizePixel = 0
+  teleportSliderBar.Parent = teleportSliderFrame
+  
+  local currentTeleportSpeed = TWEEN_SPEED
+
+  local function updateTeleportSpeed(input)
+    local newX = math.clamp(input.Position.X - teleportSliderFrame.AbsolutePosition.X, 0, teleportSliderFrame.AbsoluteSize.X)
+    local newScale = newX / teleportSliderFrame.AbsoluteSize.X
+    teleportSliderBar.Size = UDim2.new(newScale, 0, 1, 0)
+  
+    local newSpeed = minTeleportSpeed + newScale * (maxTeleportSpeed - minTeleportSpeed)
+    currentTeleportSpeed = newSpeed
+    teleSpeedLabel.Text = "Tween Speed: " .. math.floor(currentTeleportSpeed)
+  end
+
+  local isTeleportSliding = false
+  teleportSliderFrame.InputBegan:Connect(function(input)
+  	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+  		isTeleportSliding = true
+  		updateTeleportSpeed(input)
+  	end
+  end)
+  UserInputService.InputEnded:Connect(function(input)
+  	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+  		isTeleportSliding = false
+  	end
+  end)
+  UserInputService.InputChanged:Connect(function(input)
+  	if isTeleportSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+  		updateTeleportSpeed(input)
+  	end
+  end)
+  
+  teleportButton.MouseButton1Click:Connect(function()
+    if not selectedIsland then
+      teleportStatusLabel.Text = "No island selected!"
+      teleportStatusLabel.TextColor3 = BOSS_ACCENT
+      return
+    end
+
+    local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not myRootPart then
+      teleportStatusLabel.Text = "Could not find character to teleport!"
+      teleportStatusLabel.TextColor3 = BOSS_ACCENT
+      return
+    end
+    
+    local targetPosition = nil
+    if selectedIsland.PrimaryPart then
+      targetPosition = selectedIsland.PrimaryPart.Position
+    else
+      teleportStatusLabel.Text = "Selected island has no PrimaryPart!"
+      teleportStatusLabel.TextColor3 = BOSS_ACCENT
+      return
+    end
+
+    local distance = (myRootPart.Position - targetPosition).Magnitude
+    local tweenTime = distance / currentTeleportSpeed
+
+    teleportStatusLabel.Text = "Teleporting to " .. selectedIsland.Name .. "..."
+    teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+
+    local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(targetPosition)})
+    tween:Play()
+    
+    tween.Completed:Wait()
+    teleportStatusLabel.Text = "Successfully teleported to " .. selectedIsland.Name .. "."
+  end)
+
 
   -- =================================================================
   -- === Event Handling & Cleanup ====================================
