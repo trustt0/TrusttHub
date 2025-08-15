@@ -781,7 +781,7 @@ instantToFruitButton.MouseButton1Click:Connect(function()
 	TweenService:Create(instantToFruitToggleBox, tweenInfo, {BackgroundColor3 = if isInstantToFruitActive then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
 
 	tweenToFruitCheckmark.Visible = false
-	TweenService:Create(tweenToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+	TweenService:Create(instantToFruitToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 end)
 
 local tweenSpeedFrame = Instance.new("Frame")
@@ -900,7 +900,7 @@ dropdownButton.Parent = dropdownFrame
 -- The dropdown list itself
 local dropdownList = Instance.new("Frame")
 dropdownList.Name = "DropdownList"
-dropdownList.Size = UDim2.new(0, 0, 0, 0)
+dropdownList.Size = UDim2.new(0, 250, 0, 100) -- Initial size, will be updated
 dropdownList.BackgroundColor3 = FROSTED_BACKGROUND
 dropdownList.BackgroundTransparency = 0.2
 dropdownList.BorderSizePixel = 1
@@ -968,6 +968,27 @@ dropdownButton.MouseButton1Click:Connect(function()
 		
 		for name, _ in pairs(islandLocations) do
 			createDropdownItem(name)
+		end
+	end
+end)
+
+-- Add a listener to hide the dropdown when the user clicks outside of it
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	if not gameProcessedEvent and dropdownList.Visible then
+		local mousePosition = input.Position
+		local buttonAbsolutePosition = dropdownButton.AbsolutePosition
+		local buttonAbsoluteSize = dropdownButton.AbsoluteSize
+		local listAbsolutePosition = dropdownList.AbsolutePosition
+		local listAbsoluteSize = dropdownList.AbsoluteSize
+
+		local mouseInButton = (mousePosition.X >= buttonAbsolutePosition.X and mousePosition.X <= buttonAbsolutePosition.X + buttonAbsoluteSize.X) and
+							(mousePosition.Y >= buttonAbsolutePosition.Y and mousePosition.Y <= buttonAbsolutePosition.Y + buttonAbsoluteSize.Y)
+		
+		local mouseInList = (mousePosition.X >= listAbsolutePosition.X and mousePosition.X <= listAbsolutePosition.X + listAbsoluteSize.X) and
+							(mousePosition.Y >= listAbsolutePosition.Y and mousePosition.Y <= listAbsolutePosition.Y + listAbsoluteSize.Y)
+		
+		if not mouseInButton and not mouseInList then
+			dropdownList.Visible = false
 		end
 	end
 end)
