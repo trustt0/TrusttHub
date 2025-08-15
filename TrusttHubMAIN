@@ -1045,6 +1045,7 @@ modelListPaddingScroll.PaddingRight = UDim.new(0, 5)
 modelListPaddingScroll.Parent = modelListScroll
 
 local function updateModelList()
+	print("Checking for Map folder...")
 	local mapFolder = Workspace:FindFirstChild("Map")
 	if not mapFolder then
 		teleportStatusLabel.Text = "Map folder not found in Workspace."
@@ -1052,6 +1053,7 @@ local function updateModelList()
 		return
 	end
 	
+	print("Found Map folder. Populating list...")
 	-- Clear old buttons
 	for _, child in pairs(modelListScroll:GetChildren()) do
 		if child:IsA("TextButton") then
