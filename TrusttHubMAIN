@@ -57,9 +57,9 @@ screenGui.Name = "UnifiedMenu"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
--- =================================================================
--- === UI Utility Functions ========================================
--- =================================================================
+---
+## UI Utility Functions
+---
 
 -- Creates a main container frame with a modern, frosted glass look
 local function createMainFrame(size: UDim2, position: UDim2, parent: Instance)
@@ -252,9 +252,9 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	return container, button, checkmark, toggleBox
 end
 
--- =================================================================
--- === UI Construction and Logic ===================================
--- =================================================================
+---
+## UI Construction and Logic
+---
 
 -- DRAGGING FUNCTIONALITY
 local isDragging = false
@@ -1105,7 +1105,7 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 		
-		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
@@ -1132,9 +1132,9 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- =================================================================
--- === Event Handling & Cleanup ====================================
--- =================================================================
+---
+## Event Handling & Cleanup
+---
 -- ESP FUNCTIONALITY
 local playerLabels = {}
 local npcLabels = {}
