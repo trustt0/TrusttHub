@@ -1100,14 +1100,32 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		
 		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
 		local tweenTime = distance / currentTeleportSpeed
+		
+		-- NEW: Set Humanoid properties to prevent bouncing
+		local humanoid = myRootPart.Parent:FindFirstChildOfClass("Humanoid")
+		local oldWalkSpeed, oldJumpPower
+		if humanoid then
+			oldWalkSpeed = humanoid.WalkSpeed
+			oldJumpPower = humanoid.JumpPower
+			humanoid.WalkSpeed = 0
+			humanoid.JumpPower = 0
+		end
 
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 		
-		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		-- NEW: Changed easing style to Linear for constant speed
+		local teleportTweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+		currentTeleportTween = TweenService:Create(myRootPart, teleportTweenInfo, {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
+			-- NEW: Restore Humanoid properties after tween
+			if humanoid then
+				humanoid.WalkSpeed = oldWalkSpeed
+				humanoid.JumpPower = oldJumpPower
+			end
+
 			if state == Enum.TweenStatus.Completed then
 				teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
