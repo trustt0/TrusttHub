@@ -1060,9 +1060,14 @@ end
 -- Teleport Logic
 local currentTeleportTween = nil
 teleportToggleButton.MouseButton1Click:Connect(function()
-	local isEnabled = teleportCheckmark.Visible -- Check the current state
+	local isCurrentlyEnabled = teleportCheckmark.Visible
+	local newEnabledState = not isCurrentlyEnabled
 
-	if isEnabled then -- Teleport is now enabled, so we start the teleport
+	teleportCheckmark.Visible = newEnabledState
+	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if newEnabledState then TELEPORT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+
+	if newEnabledState then
+		-- START TELEPORT
 		if currentTeleportTween then
 			currentTeleportTween:Cancel()
 		end
@@ -1102,6 +1107,7 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
+			currentTeleportTween = nil
 			if state == Enum.TweenStatus.Completed then
 				teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
@@ -1109,16 +1115,17 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 				teleportStatusLabel.Text = "Teleport canceled."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
 			end
-			currentTeleportTween = nil
-			-- Auto-turn off the toggle after the tween completes or is canceled
+			-- The toggle is already turned off when this runs
 			teleportCheckmark.Visible = false
 			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
 		end)
 		
 		currentTeleportTween:Play()
-	else -- Teleport is now disabled, so we cancel any active tween
+	else
+		-- CANCEL TELEPORT
 		if currentTeleportTween then
 			currentTeleportTween:Cancel()
+			currentTeleportTween = nil
 		end
 	end
 end)
