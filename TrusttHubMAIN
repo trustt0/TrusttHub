@@ -894,7 +894,7 @@ teleSpeedLabel.Size = UDim2.new(0.5, -5, 1, 0)
 teleSpeedLabel.Position = UDim2.new(0, 5, 0, 0)
 teleSpeedLabel.BackgroundTransparency = 1
 teleSpeedLabel.TextColor3 = FONT_COLOR
-teleSpeedLabel.Text = "Tween Speed: " .. 150
+teleSpeedLabel.Text = "Tween Speed: " .. 200
 teleSpeedLabel.TextScaled = true
 teleSpeedLabel.Font = BODY_FONT
 teleSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -917,12 +917,12 @@ local minTeleportSpeed = 50
 local maxTeleportSpeed = 500
 local teleportSliderBar = Instance.new("Frame")
 teleportSliderBar.Name = "SliderBar"
-teleportSliderBar.Size = UDim2.new((150 - minTeleportSpeed) / (maxTeleportSpeed - minTeleportSpeed), 0, 1, 0)
+teleportSliderBar.Size = UDim2.new((200 - minTeleportSpeed) / (maxTeleportSpeed - minTeleportSpeed), 0, 1, 0)
 teleportSliderBar.BackgroundColor3 = TELEPORT_ACCENT
 teleportSliderBar.BorderSizePixel = 0
 teleportSliderBar.Parent = teleportSliderFrame
 
-local currentTeleportSpeed = 150
+local currentTeleportSpeed = 200
 
 local function updateTeleportSpeed(input)
 	local newX = math.clamp(input.Position.X - teleportSliderFrame.AbsolutePosition.X, 0, teleportSliderFrame.AbsoluteSize.X)
@@ -1058,74 +1058,77 @@ for name, cf in pairs(locations) do
 end
 
 -- Teleport Logic
+local currentTeleportTween = nil
 teleportToggleButton.MouseButton1Click:Connect(function()
-	if not selectedLocation then
-		teleportStatusLabel.Text = "Please select a location first."
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-		return
+	local isCurrentlyEnabled = teleportCheckmark.Visible
+	local newEnabledState = not isCurrentlyEnabled
+
+	teleportCheckmark.Visible = newEnabledState
+	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if newEnabledState then TELEPORT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+
+	if newEnabledState then
+		-- START TELEPORT
+		if currentTeleportTween then
+			currentTeleportTween:Cancel()
+		end
+
+		local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not myRootPart then
+			teleportStatusLabel.Text = "Could not find character to teleport!"
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		if not selectedLocation then
+			teleportStatusLabel.Text = "Please select a location first."
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		local targetCFrame = locations[selectedLocation]
+		if not targetCFrame then
+			teleportStatusLabel.Text = selectedLocation .. " coordinates not found!"
+			teleportStatusLabel.TextColor3 = BOSS_ACCENT
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+			return
+		end
+		
+		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
+		local tweenTime = distance / currentTeleportSpeed
+
+		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
+		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+		
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		
+		currentTeleportTween.Completed:Connect(function(state)
+			currentTeleportTween = nil
+			if state == Enum.TweenStatus.Completed then
+				teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
+				teleportStatusLabel.TextColor3 = FONT_COLOR
+			elseif state == Enum.TweenStatus.Canceled then
+				teleportStatusLabel.Text = "Teleport canceled."
+				teleportStatusLabel.TextColor3 = FONT_COLOR
+			end
+			-- The toggle is already turned off when this runs
+			teleportCheckmark.Visible = false
+			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+		end)
+		
+		currentTeleportTween:Play()
+	else
+		-- CANCEL TELEPORT
+		if currentTeleportTween then
+			currentTeleportTween:Cancel()
+			currentTeleportTween = nil
+		end
 	end
-
-	-- Immediately toggle the UI on
-	teleportCheckmark.Visible = true
-	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = TELEPORT_ACCENT}):Play()
-	teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
-	teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
-
-	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not myRootPart then
-		teleportStatusLabel.Text = "Could not find character to teleport!"
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-		teleportCheckmark.Visible = false
-		TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
-		return
-	end
-
-	local targetCFrame = locations[selectedLocation]
-	
-	-- Store original properties and anchor the part to stop shaking
-	local humanoid = myRootPart.Parent:FindFirstChildOfClass("Humanoid")
-	local oldWalkSpeed = humanoid.WalkSpeed
-	local oldJumpPower = humanoid.JumpPower
-	local oldAnchored = myRootPart.Anchored
-	
-	humanoid.WalkSpeed = 0
-	humanoid.JumpPower = 0
-	myRootPart.Anchored = true
-
-	local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
-	local tweenTime = distance / currentTeleportSpeed
-
-	local tweenInfo = TweenInfo.new(
-		tweenTime, 
-		Enum.EasingStyle.Quint, 
-		Enum.EasingDirection.Out
-	)
-	
-	local tween = TweenService:Create(myRootPart, tweenInfo, { CFrame = targetCFrame })
-	
-	local success, err = pcall(function()
-		tween:Play()
-		tween.Completed:Wait()
-	end)
-
-	if not success then
-		warn("Tween failed:", err)
-		teleportStatusLabel.Text = "Teleport failed."
-		teleportStatusLabel.TextColor3 = BOSS_ACCENT
-	end
-
-	-- Restore properties
-	humanoid.WalkSpeed = oldWalkSpeed
-	humanoid.JumpPower = oldJumpPower
-	myRootPart.Anchored = oldAnchored
-
-	-- Toggle the UI off and show success message
-	teleportCheckmark.Visible = false
-	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
-	teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
-	teleportStatusLabel.TextColor3 = FONT_COLOR
 end)
-
 
 -- =================================================================
 -- === Event Handling & Cleanup ====================================
