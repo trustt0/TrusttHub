@@ -681,7 +681,7 @@ local function enableFruitFinder()
 					local distance = (myRootPart.Position - nearestFruitPart.Position).Magnitude
 					local tweenTime = distance / TWEEN_SPEED
 					
-					fruitStatusLabel.Text = "Fruit found! Smooth moving to location."
+					fruitStatusLabel.Text = "Fruit found! Smooth tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
@@ -689,21 +689,29 @@ local function enableFruitFinder()
 					
 					tween.Completed:Wait()
 					isTeleporting = false
+					
+					task.delay(2, function()
+						fruitStatusLabel.Text = "Fruit finder is ready."
+						fruitStatusLabel.TextColor3 = FONT_COLOR
+					end)
 				elseif isInstantToFruitActive then
-					fruitStatusLabel.Text = "Fruit found! Teleporting to location."
+					fruitStatusLabel.Text = "Fruit found! Instantly teleporting to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
 					myRootPart.CFrame = CFrame.new(nearestFruitPart.Position)
 					
 					task.wait() -- Wait one frame
 					isTeleporting = false
+					
+					task.delay(2, function()
+						fruitStatusLabel.Text = "Fruit finder is ready."
+						fruitStatusLabel.TextColor3 = FONT_COLOR
+					end)
 				else
-					fruitStatusLabel.Text = "Fruit found!"
+					fruitStatusLabel.Text = "Fruit found! Select a teleport option."
 					isTeleporting = false
 				end
 				
-				fruitStatusLabel.Text = "Fruit finder is ready."
-				fruitStatusLabel.TextColor3 = FONT_COLOR
 			else
 				fruitStatusLabel.Text = "Searching for fruits..."
 				fruitStatusLabel.TextColor3 = FONT_COLOR
