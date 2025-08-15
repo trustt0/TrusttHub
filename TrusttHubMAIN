@@ -45,6 +45,7 @@ local ESP_VERTICAL_OFFSET = 20 -- Adjusted vertical offset for ESP labels for be
 local player = Players.LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
 local camera = Workspace.CurrentCamera
+local cameraModule = player.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("CameraModule")
 
 -- Create a container for the tracers
 local TracerContainer = Instance.new("Folder")
@@ -1108,8 +1109,11 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 
 		-- CINEMATIC CAMERA TWEEN
-		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
+		-- Step 1: Disable the default camera script to take control.
+		cameraModule.Enabled = false
 		camera.CameraType = Enum.CameraType.Scriptable
+		
+		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
 		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = cameraTargetCFrame})
 		currentCameraTween:Play()
 		
@@ -1124,8 +1128,9 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 				teleportStatusLabel.Text = "Teleport canceled."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
 			end
-			-- Restore camera control
+			-- Step 2: Restore the camera's state and re-enable the camera script.
 			camera.CameraType = Enum.CameraType.Custom
+			cameraModule.Enabled = true
 			currentCameraTween = nil
 
 			-- The toggle is already turned off when this runs
@@ -1143,7 +1148,9 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		if currentCameraTween then
 			currentCameraTween:Cancel()
 			currentCameraTween = nil
+			-- Restore the camera script if it was disabled.
 			camera.CameraType = Enum.CameraType.Custom
+			cameraModule.Enabled = true
 		end
 	end
 end)
