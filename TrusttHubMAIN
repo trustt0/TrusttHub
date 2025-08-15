@@ -3,8 +3,9 @@
 	A LocalScript to create a single, modern, enhanced, and dynamic UI menu.
 	This script is designed to be placed in StarterPlayerScripts.
 	
-	This version includes the full UI, with a two-panel tabbed layout, a corrected
-	minimization feature, and a new "Teleport" tab with speed-controlled tweening.
+	This version includes the full UI, with a two-panel tabbed layout and a corrected
+	minimization feature. The "Tween to Fruits" button now has a question mark (?)
+	that displays a tooltip when the mouse hovers over it.
 ]]
 
 -- SERVICES
@@ -33,7 +34,7 @@ local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
 local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
 local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
-local TELEPORT_ACCENT = Color3.fromRGB(85, 170, 255) -- Blue for Teleport
+local TELEPORT_ACCENT = Color3.fromRGB(150, 150, 255) -- New accent color for Teleport tab
 
 local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
@@ -252,6 +253,100 @@ local function createToggleButton(parent: Instance, text: string, accentColor: C
 	return container, button, checkmark, toggleBox
 end
 
+-- Create a dropdown menu
+local function createDropdown(parent: Instance, name: string, items: {string}, layoutOrder: number)
+	local container = Instance.new("Frame")
+	container.Name = name .. "Container"
+	container.LayoutOrder = layoutOrder
+	container.Size = UDim2.new(1, -20, 0, 45)
+	container.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
+	container.BackgroundTransparency = 0.5
+	container.BorderSizePixel = 0
+	container.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = container
+
+	local dropdownButton = Instance.new("TextButton")
+	dropdownButton.Name = "DropdownButton"
+	dropdownButton.Size = UDim2.new(1, 0, 1, 0)
+	dropdownButton.BackgroundTransparency = 1
+	dropdownButton.Text = items[1]
+	dropdownButton.TextColor3 = FONT_COLOR
+	dropdownButton.TextScaled = true
+	dropdownButton.Font = BODY_FONT
+	dropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+	dropdownButton.TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	dropdownButton.Parent = container
+
+	local arrow = Instance.new("TextLabel")
+	arrow.Name = "Arrow"
+	arrow.Size = UDim2.new(0, 20, 1, 0)
+	arrow.Position = UDim2.new(1, -25, 0, 0)
+	arrow.BackgroundTransparency = 1
+	arrow.Text = "▼"
+	arrow.TextColor3 = FONT_COLOR
+	arrow.TextScaled = true
+	arrow.Font = BODY_FONT
+	arrow.TextXAlignment = Enum.TextXAlignment.Right
+	arrow.Parent = dropdownButton
+
+	local dropdownList = Instance.new("Frame")
+	dropdownList.Name = "DropdownList"
+	dropdownList.Size = UDim2.new(1, 0, 0, 0)
+	dropdownList.Position = UDim2.new(0, 0, 1, 5)
+	dropdownList.ZIndex = 2
+	dropdownList.BackgroundColor3 = FROSTED_BACKGROUND
+	dropdownList.BackgroundTransparency = 0
+	dropdownList.BorderSizePixel = 0
+	dropdownList.Visible = false
+	dropdownList.Parent = parent
+
+	local listCorner = Instance.new("UICorner")
+	listCorner.CornerRadius = UDim.new(0, 8)
+	listCorner.Parent = dropdownList
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 5)
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = dropdownList
+
+	for _, item in items do
+		local itemButton = Instance.new("TextButton")
+		itemButton.Name = item .. "Item"
+		itemButton.Size = UDim2.new(1, -10, 0, 30)
+		itemButton.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
+		itemButton.BackgroundTransparency = 0.5
+		itemButton.BorderSizePixel = 0
+		itemButton.TextColor3 = FONT_COLOR
+		itemButton.Text = item
+		itemButton.TextScaled = true
+		itemButton.Font = BODY_FONT
+		itemButton.Parent = dropdownList
+
+		itemButton.MouseButton1Click:Connect(function()
+			dropdownButton.Text = item
+			dropdownList.Visible = false
+			local newSize = UDim2.new(container.Size.X.Scale, container.Size.X.Offset, 0, container.Size.Y.Offset)
+			TweenService:Create(container.Parent, TweenInfo.new(0.2), {Size = newSize}):Play()
+		end)
+	end
+	
+	local isOpen = false
+	dropdownButton.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		local newHeight = isOpen and #items * 35 or 0
+		dropdownList.Visible = isOpen
+		local targetSize = UDim2.new(1, 0, 0, newHeight)
+		TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = targetSize}):Play()
+	end)
+
+	return container, dropdownButton
+end
+
+
 -- =================================================================
 -- === UI Construction and Logic ===================================
 -- =================================================================
@@ -433,7 +528,8 @@ task.spawn(function()
 		if activeTabName == "Boss Status" and enemiesFolder then
 			local sawBoss = enemiesFolder:FindFirstChild("Saw")
 			if sawBoss and sawBoss:IsA("Model") then
-				-- Code to handle boss status
+				statusLabel.Text = "Bosses spawned!"
+				statusLabel.TextColor3 = BOSS_ACCENT
 			else
 				statusLabel.Text = "No bosses spawned"
 				statusLabel.TextColor3 = FONT_COLOR
@@ -538,113 +634,70 @@ levelStatusLabel.TextColor3 = FONT_COLOR
 levelStatusLabel.Text = "Level Status"
 levelStatusLabel.TextScaled = true
 levelStatusLabel.Font = TITLE_FONT
+levelStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 levelStatusLabel.Parent = levelStatusFrame
+farmLevelButton.MouseButton1Click:Connect(function()
+	isFarmLevelActive = not isFarmLevelActive
+	levelStatusFrame.Visible = isFarmLevelActive
+end)
 
--- NEW Teleport Tab
-local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 4)
+-- Fruit Notifier Tab
+local fruitNotifierContentFrame = createTabAndContent("Fruit Notifier", FRUIT_ACCENT, 4)
+local fruitNotifierToggle, fruitNotifierButton, fruitNotifierCheckmark, fruitNotifierToggleBox = createToggleButton(fruitNotifierContentFrame, "Fruit Notifier", FRUIT_ACCENT, false, 1)
+local isFruitNotifierActive = false
+local fruitStatusFrame = Instance.new("Frame")
+fruitStatusFrame.Name = "FruitStatusFrame"
+fruitStatusFrame.LayoutOrder = 2
+fruitStatusFrame.Size = UDim2.new(1, -20, 0, 50)
+fruitStatusFrame.BackgroundColor3 = FROSTED_BACKGROUND
+fruitStatusFrame.BackgroundTransparency = 0.5
+fruitStatusFrame.BorderSizePixel = 0
+fruitStatusFrame.ClipsDescendants = true
+fruitStatusFrame.Visible = false
+fruitStatusFrame.Parent = fruitNotifierContentFrame
+local fruitStatusCorner = Instance.new("UICorner")
+fruitStatusCorner.CornerRadius = UDim.new(0, 8)
+fruitStatusCorner.Parent = fruitStatusFrame
+local fruitStatusLabel = Instance.new("TextLabel")
+fruitStatusLabel.Name = "FruitStatusLabel"
+fruitStatusLabel.Size = UDim2.new(1, 0, 1, 0)
+fruitStatusLabel.BackgroundTransparency = 1
+fruitStatusLabel.TextColor3 = FONT_COLOR
+fruitStatusLabel.Text = "Fruit Status"
+fruitStatusLabel.TextScaled = true
+fruitStatusLabel.Font = TITLE_FONT
+fruitStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+fruitStatusLabel.Parent = fruitStatusFrame
+fruitNotifierButton.MouseButton1Click:Connect(function()
+	isFruitNotifierActive = not isFruitNotifierActive
+	fruitStatusFrame.Visible = isFruitNotifierActive
+end)
 
-local teleportIslandLabel = Instance.new("TextLabel")
-teleportIslandLabel.Name = "TeleportIslandLabel"
-teleportIslandLabel.LayoutOrder = 1
-teleportIslandLabel.Text = "Select Island"
-teleportIslandLabel.Size = UDim2.new(1, -20, 0, 25)
-teleportIslandLabel.BackgroundTransparency = 1
-teleportIslandLabel.TextColor3 = TELEPORT_ACCENT
-teleportIslandLabel.TextScaled = true
-teleportIslandLabel.Font = TITLE_FONT
-teleportIslandLabel.TextXAlignment = Enum.TextXAlignment.Left
-teleportIslandLabel.Parent = teleportContentFrame
+-- Teleport Tab
+local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
 
-local dropdownContainer = Instance.new("Frame")
-dropdownContainer.Name = "DropdownContainer"
-dropdownContainer.LayoutOrder = 2
-dropdownContainer.Size = UDim2.new(1, -20, 0, 45)
-dropdownContainer.BackgroundColor3 = FROSTED_BACKGROUND
-dropdownContainer.BackgroundTransparency = 0.4
-dropdownContainer.BorderSizePixel = 0
-dropdownContainer.Parent = teleportContentFrame
-local dropdownCorner = Instance.new("UICorner")
-dropdownCorner.CornerRadius = UDim.new(0, 8)
-dropdownCorner.Parent = dropdownContainer
-local dropdownButton = Instance.new("TextButton")
-dropdownButton.Name = "DropdownButton"
-dropdownButton.Size = UDim2.new(1, 0, 1, 0)
-dropdownButton.BackgroundTransparency = 1
-dropdownButton.Text = "WindMill"
-dropdownButton.TextColor3 = FONT_COLOR
-dropdownButton.TextScaled = true
-dropdownButton.Font = BODY_FONT
-dropdownButton.Parent = dropdownContainer
-local dropdownArrow = Instance.new("TextLabel")
-dropdownArrow.Size = UDim2.new(0, 20, 1, 0)
-dropdownArrow.Position = UDim2.new(1, -30, 0, 0)
-dropdownArrow.BackgroundTransparency = 1
-dropdownArrow.TextColor3 = FONT_COLOR
-dropdownArrow.Text = "▼"
-dropdownArrow.Font = BODY_FONT
-dropdownArrow.Parent = dropdownButton
-
-local dropdownList = Instance.new("Frame")
-dropdownList.Name = "DropdownList"
-dropdownList.Size = UDim2.new(1, 0, 0, 50)
-dropdownList.Position = UDim2.new(0, 0, 1, 5)
-dropdownList.BackgroundTransparency = 0.4
-dropdownList.BackgroundColor3 = FROSTED_BACKGROUND
-dropdownList.BorderSizePixel = 0
-dropdownList.Visible = false
-dropdownList.Parent = dropdownContainer
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Parent = dropdownList
-local listPadding = Instance.new("UIPadding")
-listPadding.PaddingTop = UDim.new(0, 5)
-listPadding.PaddingBottom = UDim.new(0, 5)
-listPadding.Parent = dropdownList
-
--- Add list items to the dropdown
-local islands = {"WindMill"}
+-- Dropdown to select islands
 local selectedIsland = "WindMill"
-for _, island in pairs(islands) do
-	local itemButton = Instance.new("TextButton")
-	itemButton.Name = island .. "Item"
-	itemButton.Size = UDim2.new(1, -10, 0, 40)
-	itemButton.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
-	itemButton.BackgroundTransparency = 0.5
-	itemButton.BorderSizePixel = 0
-	itemButton.Text = island
-	itemButton.TextColor3 = FONT_COLOR
-	itemButton.Font = BODY_FONT
-	itemButton.TextScaled = true
-	itemButton.Parent = dropdownList
-	local itemCorner = Instance.new("UICorner")
-	itemCorner.CornerRadius = UDim.new(0, 5)
-	itemCorner.Parent = itemButton
-	
-	itemButton.MouseButton1Click:Connect(function()
-		selectedIsland = island
-		dropdownButton.Text = island
-		dropdownList.Visible = false
-	end)
-end
-
-dropdownButton.MouseButton1Click:Connect(function()
-	dropdownList.Visible = not dropdownList.Visible
+local islands = {"WindMill"}
+local islandDropdownContainer, islandDropdownButton = createDropdown(teleportContentFrame, "IslandDropdown", islands, 1)
+islandDropdownButton.Text = "WindMill"
+islandDropdownButton.MouseButton1Click:Connect(function()
+	selectedIsland = islandDropdownButton.Text
 end)
 
 -- Speed slider
-local speedContainer = Instance.new("Frame")
-speedContainer.Name = "SpeedContainer"
-speedContainer.LayoutOrder = 3
-speedContainer.Size = UDim2.new(1, -20, 0, 60)
-speedContainer.BackgroundColor3 = FROSTED_BACKGROUND
-speedContainer.BackgroundTransparency = 0.4
-speedContainer.BorderSizePixel = 0
-speedContainer.Parent = teleportContentFrame
+local speedSliderContainer = Instance.new("Frame")
+speedSliderContainer.Name = "SpeedSliderContainer"
+speedSliderContainer.LayoutOrder = 2
+speedSliderContainer.Size = UDim2.new(1, -20, 0, 45)
+speedSliderContainer.BackgroundColor3 = FROSTED_BACKGROUND
+speedSliderContainer.BackgroundTransparency = 0.4
+speedSliderContainer.BorderSizePixel = 0
+speedSliderContainer.Parent = teleportContentFrame
+
 local speedCorner = Instance.new("UICorner")
 speedCorner.CornerRadius = UDim.new(0, 8)
-speedCorner.Parent = speedContainer
+speedCorner.Parent = speedSliderContainer
 
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Name = "SpeedLabel"
@@ -652,308 +705,248 @@ speedLabel.Size = UDim2.new(1, -20, 0, 20)
 speedLabel.Position = UDim2.new(0, 10, 0, 5)
 speedLabel.BackgroundTransparency = 1
 speedLabel.TextColor3 = FONT_COLOR
-speedLabel.Text = "Speed: 100"
+speedLabel.Text = "Teleport Speed: 150"
 speedLabel.TextScaled = true
 speedLabel.Font = BODY_FONT
 speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedLabel.Parent = speedContainer
+speedLabel.Parent = speedSliderContainer
 
-local speedSlider = Instance.new("Frame")
+local speedSlider = Instance.new("Slider")
 speedSlider.Name = "SpeedSlider"
-speedSlider.Size = UDim2.new(1, -40, 0, 10)
-speedSlider.Position = UDim2.new(0, 20, 0, 30)
-speedSlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-speedSlider.BorderSizePixel = 0
-speedSlider.Parent = speedContainer
-local sliderCorner = Instance.new("UICorner")
-sliderCorner.CornerRadius = UDim.new(0, 5)
-sliderCorner.Parent = speedSlider
+speedSlider.Size = UDim2.new(1, -20, 0, 10)
+speedSlider.Position = UDim2.new(0, 10, 0, 25)
+speedSlider.BackgroundTransparency = 0.5
+speedSlider.BackgroundColor3 = BORDER_COLOR
+speedSlider.Parent = speedSliderContainer
+speedSlider.BarBackgroundColor3 = ACCENT_COLOR
+speedSlider.Value = 0.5 -- Normalized value for 150 speed (min 50, max 300)
 
-local sliderBar = Instance.new("Frame")
-sliderBar.Name = "SliderBar"
-sliderBar.Size = UDim2.new(0.5, 0, 1, 0)
-sliderBar.BackgroundColor3 = ACCENT_COLOR
-sliderBar.BorderSizePixel = 0
-sliderBar.Parent = speedSlider
-
-local sliderHandle = Instance.new("TextButton")
-sliderHandle.Name = "SliderHandle"
-sliderHandle.Size = UDim2.new(0, 20, 0, 20)
-sliderHandle.Position = UDim2.new(0.5, -10, 0.5, -10)
-sliderHandle.BackgroundColor3 = FONT_COLOR
-sliderHandle.BorderSizePixel = 0
-sliderHandle.Text = ""
-sliderHandle.Parent = speedSlider
-local handleCorner = Instance.new("UICorner")
-handleCorner.CornerRadius = UDim.new(0, 10)
-handleCorner.Parent = sliderHandle
-
-local isSliding = false
-local speedValue = 100 -- Default speed
-local MIN_SPEED = 50
-local MAX_SPEED = 300
-
-sliderHandle.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		isSliding = true
+local currentTeleportSpeed = 150
+speedSlider.Changed:Connect(function(property)
+	if property == "Value" then
+		currentTeleportSpeed = 50 + (speedSlider.Value * 250)
+		speedLabel.Text = string.format("Teleport Speed: %d", math.floor(currentTeleportSpeed))
 	end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		isSliding = false
-	end
-end)
+-- Teleport button toggle
+local teleportToggleContainer, teleportToggleButton, teleportToggleCheckmark, teleportToggleBox = createToggleButton(teleportContentFrame, "Teleport to Selected Island", ACCENT_COLOR, false, 3)
 
-UserInputService.InputChanged:Connect(function(input)
-	if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local newX = math.clamp(input.Position.X - speedSlider.AbsolutePosition.X, 0, speedSlider.AbsoluteSize.X)
-		local newScale = newX / speedSlider.AbsoluteSize.X
-		sliderHandle.Position = UDim2.new(newScale, -10, 0.5, -10)
-		sliderBar.Size = UDim2.new(newScale, 0, 1, 0)
-		speedValue = math.round(MIN_SPEED + (MAX_SPEED - MIN_SPEED) * newScale)
-		speedLabel.Text = "Speed: " .. speedValue
-	end
-end)
-
--- Teleport toggle
-local teleportToggleContainer, teleportButton, teleportCheckmark, teleportToggleBox = createToggleButton(teleportContentFrame, "Teleport to Selected Island", TELEPORT_ACCENT, false, 4)
 local isTeleporting = false
-
-teleportButton.MouseButton1Click:Connect(function()
-	local mapFolder = Workspace:FindFirstChild("Map")
-	if not mapFolder then
-		warn("Map folder not found!")
-		return
-	end
-
-	local targetModel = mapFolder:FindFirstChild(selectedIsland)
-	if not targetModel or not targetModel:IsA("Model") then
-		warn("Target model '" .. selectedIsland .. "' not found!")
-		return
-	end
-
-	local character = player.Character or player.CharacterAdded:Wait()
-	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-	if not humanoidRootPart then
-		warn("HumanoidRootPart not found!")
-		return
-	end
-
-	local tweenDuration = (humanoidRootPart.Position - targetModel:GetPrimaryPartCFrame().Position).Magnitude / speedValue
-	local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, false, 0)
-	local tween = TweenService:Create(humanoidRootPart, tweenInfo, { CFrame = targetModel:GetPrimaryPartCFrame() })
-
+teleportToggleButton.MouseButton1Click:Connect(function()
 	isTeleporting = not isTeleporting
-	teleportCheckmark.Visible = isTeleporting
-	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if isTeleporting then TELEPORT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	teleportToggleCheckmark.Visible = isTeleporting
+	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if isTeleporting then ACCENT_COLOR else Color3.fromRGB(80, 80, 80)}):Play()
+end)
 
+-- TWEENING LOGIC
+local function teleportPlayer(destination: Vector3, speed: number)
+	local character = player.Character
+	if not character then return end
+	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoidRootPart then return end
+
+	local tweenInfo = TweenInfo.new(100 / speed, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(destination)})
+	tween:Play()
+end
+
+RunService.RenderStepped:Connect(function()
 	if isTeleporting then
-		tween:Play()
-		tween.Completed:Wait()
-		isTeleporting = false
-		teleportCheckmark.Visible = false
-		TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
-	else
-		tween:Cancel()
+		if selectedIsland == "WindMill" then
+			local windmill = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("WindMill")
+			if windmill and windmill:IsA("Model") then
+				local destination = windmill.PrimaryPart.Position + Vector3.new(0, 10, 0)
+				teleportPlayer(destination, currentTeleportSpeed)
+			end
+		end
 	end
 end)
 
--- ESP/Tracer Logic (from original script)
+
+-- =================================================================
+-- === ESP and other logic =========================================
+-- =================================================================
+
 local playerLabels = {}
 local playerTracers = {}
 local npcLabels = {}
-local playerNpcs = {}
+local nukeButton = mainFrame.TitleBar:FindFirstChild("NukeButton")
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local function createPlayerLabel()
-	local BillboardGui = Instance.new("BillboardGui")
-	BillboardGui.ExtentsOffset = Vector3.new(0, ESP_VERTICAL_OFFSET, 0)
-	BillboardGui.Size = UDim2.new(0, 150, 0, 50)
-	BillboardGui.Adornment = nil
-	BillboardGui.AlwaysOnTop = true
+	local newLabel = Instance.new("BillboardGui")
+	newLabel.Name = "PlayerLabel"
+	newLabel.Size = UDim2.new(0, 200, 0, 50)
+	newLabel.StudsOffset = Vector3.new(0, ESP_VERTICAL_OFFSET, 0)
+	newLabel.AlwaysOnTop = true
+	newLabel.Parent = Workspace
 
-	local TextLabel = Instance.new("TextLabel")
-	TextLabel.Size = UDim2.new(1, 0, 1, 0)
-	TextLabel.BackgroundTransparency = 0.5
-	TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	TextLabel.TextColor3 = FONT_COLOR
-	TextLabel.TextScaled = true
-	TextLabel.Font = BODY_FONT
-	TextLabel.Text = "Username"
-	TextLabel.Parent = BillboardGui
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Name = "TextLabel"
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextColor3 = FONT_COLOR
+	textLabel.TextScaled = true
+	textLabel.Font = BODY_FONT
+	textLabel.Parent = newLabel
 
-	local UICorner = Instance.new("UICorner")
-	UICorner.CornerRadius = UDim.new(0, 5)
-	UICorner.Parent = TextLabel
-	
-	return BillboardGui
+	return newLabel
 end
 
 local function createPlayerTracer()
-	local tracer = Instance.new("Part")
-	tracer.Name = "PlayerTracer"
-	tracer.Parent = TracerContainer
-	tracer.Anchored = true
-	tracer.CanCollide = false
-	tracer.BrickColor = BrickColor.new(TRACER_COLOR)
-	tracer.Transparency = TRACER_TRANSPARENCY
+	local tracerPart = Instance.new("Part")
+	tracerPart.Name = "PlayerTracer"
+	tracerPart.Size = Vector3.new(TRACER_THICKNESS, 1, TRACER_THICKNESS)
+	tracerPart.Anchored = true
+	tracerPart.CanCollide = false
+	tracerPart.Color = TRACER_COLOR
+	tracerPart.Transparency = TRACER_TRANSPARENCY
+	tracerPart.Parent = TracerContainer
 	
-	local specialMesh = Instance.new("SpecialMesh")
-	specialMesh.MeshType = Enum.MeshType.Cylinder
-	specialMesh.Scale = Vector3.new(TRACER_THICKNESS, 1, TRACER_THICKNESS)
-	specialMesh.Parent = tracer
+	return tracerPart
+end
+
+local function createNpcLabel(npc: Instance)
+	local newLabel = Instance.new("BillboardGui")
+	newLabel.Name = "NpcLabel"
+	newLabel.Size = UDim2.new(0, 200, 0, 50)
+	newLabel.StudsOffset = Vector3.new(0, ESP_VERTICAL_OFFSET, 0)
+	newLabel.AlwaysOnTop = true
+	newLabel.Parent = npc.PrimaryPart
 	
-	return tracer
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Name = "TextLabel"
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextColor3 = ESP_ACCENT
+	textLabel.TextScaled = true
+	textLabel.Font = BODY_FONT
+	textLabel.Parent = newLabel
+
+	npcLabels[npc] = newLabel
+	return newLabel
 end
 
 local function updatePlayerLabels()
 	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= player and p.Character then
-			local rootPart = p.Character:FindFirstChild("HumanoidRootPart")
-			if rootPart then
-				local label = playerLabels[p]
-				if not label then
-					label = createPlayerLabel()
-					playerLabels[p] = label
-				end
-				
-				local distance = (rootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+		if p ~= player then
+			local label = playerLabels[p]
+			if not label then
+				label = createPlayerLabel()
+				playerLabels[p] = label
+			end
+			local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if root then
+				label.Adornee = root
+				local dist = (player.Character.HumanoidRootPart.Position - root.Position).Magnitude
 				local text = ""
-				if playerCheckboxState["Username ESP"] then text = p.Name end
-				if playerCheckboxState["Distance ESP"] then text = text .. " (" .. math.floor(distance) .. "m)" end
-				
-				label.Adornment = rootPart
+				if playerCheckboxState["Username ESP"] then
+					text ..= p.Name .. "\n"
+				end
+				if playerCheckboxState["Distance ESP"] then
+					text ..= math.floor(dist) .. " studs"
+				end
 				label.TextLabel.Text = text
 				label.Visible = true
-				if text == "" then label.Visible = false end
+			else
+				label.Visible = false
 			end
 		end
 	end
 end
 
 local function updatePlayerTracers()
+	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not myRootPart then return end
+	
 	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= player and p.Character then
-			local rootPart = p.Character:FindFirstChild("HumanoidRootPart")
-			if rootPart then
-				local tracer = playerTracers[p]
-				if not tracer then
-					tracer = createPlayerTracer()
-					playerTracers[p] = tracer
-				end
-				
-				local startPos = player.Character.HumanoidRootPart.Position
-				local endPos = rootPart.Position
-				local distance = (startPos - endPos).Magnitude
-				
-				tracer.Size = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS)
-				tracer.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -distance / 2)
-				tracer.Transparency = 0.5
+		if p ~= player then
+			local tracer = playerTracers[p]
+			if not tracer then
+				tracer = createPlayerTracer()
+				playerTracers[p] = tracer
 			end
+			local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local startPos = myRootPart.Position
+				local endPos = root.Position
+				
+				tracer.Size = Vector3.new(TRACER_THICKNESS, (endPos - startPos).Magnitude, TRACER_THICKNESS)
+				tracer.CFrame = CFrame.new(startPos:Lerp(endPos, 0.5), endPos)
+				tracer.Transparency = 0
+			else
+				tracer.Transparency = 1
+			end
+		end
+	end
+end
+
+local function updateNpcLabels()
+	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not myRootPart then return end
+	
+	local npcs = {}
+	if playerCheckboxState["Set Home Point"] then
+		for _, child in pairs(Workspace:GetChildren()) do
+			if child.Name == "Home" and child:IsA("BasePart") then
+				table.insert(npcs, child)
+			end
+		end
+	end
+	
+	if playerCheckboxState["Boat Dealer"] then
+		local npc = Workspace:FindFirstChild("BoatDealer")
+		if npc and npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") then
+			table.insert(npcs, npc.HumanoidRootPart)
+		end
+	end
+
+	for _, npc in pairs(npcs) do
+		local label = npcLabels[npc]
+		if not label then
+			label = createNpcLabel(npc)
+			npcLabels[npc] = label
+		end
+		local dist = (myRootPart.Position - npc.Position).Magnitude
+		if dist <= NPC_ESP_DISTANCE then
+			label.Visible = true
+			local text = ""
+			if playerCheckboxState["Set Home Point"] and npc.Name == "Home" then
+				text = "Home Point\n" .. math.floor(dist) .. " studs"
+			elseif playerCheckboxState["Boat Dealer"] and npc.Parent.Name == "BoatDealer" then
+				text = "Boat Dealer\n" .. math.floor(dist) .. " studs"
+			end
+			label.TextLabel.Text = text
+		else
+			label.Visible = false
 		end
 	end
 end
 
 local function removeAllPlayerLabels()
-	for p, label in pairs(playerLabels) do
+	for _, label in pairs(playerLabels) do
 		label:Destroy()
-		playerLabels[p] = nil
 	end
-	for p, tracer in pairs(playerTracers) do
+	playerLabels = {}
+	
+	for _, tracer in pairs(playerTracers) do
 		tracer:Destroy()
-		playerTracers[p] = nil
 	end
-	
-	for _, label in pairs(npcLabels) do
-		label:Destroy()
-	end
-	npcLabels = {}
-	
-	for _, npc in pairs(playerNpcs) do
-		npc:Destroy()
-	end
-	playerNpcs = {}
-end
-
-local function createNpcLabel()
-	local BillboardGui = Instance.new("BillboardGui")
-	BillboardGui.ExtentsOffset = Vector3.new(0, ESP_VERTICAL_OFFSET, 0)
-	BillboardGui.Size = UDim2.new(0, 150, 0, 50)
-	BillboardGui.Adornment = nil
-	BillboardGui.AlwaysOnTop = true
-
-	local TextLabel = Instance.new("TextLabel")
-	TextLabel.Size = UDim2.new(1, 0, 1, 0)
-	TextLabel.BackgroundTransparency = 0.5
-	TextLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	TextLabel.TextColor3 = FONT_COLOR
-	TextLabel.TextScaled = true
-	TextLabel.Font = BODY_FONT
-	TextLabel.Text = "NPC"
-	TextLabel.Parent = BillboardGui
-
-	local UICorner = Instance.new("UICorner")
-	UICorner.CornerRadius = UDim.new(0, 5)
-	UICorner.Parent = TextLabel
-	
-	return BillboardGui
-end
-
-local function updateNpcLabels()
-	for npcName, isActive in pairs(npcCheckboxState) do
-		if isActive then
-			if playerNpcs[npcName] then
-				local npc = playerNpcs[npcName]
-				local label = npcLabels[npcName]
-				local distance = (player.Character.HumanoidRootPart.Position - npc.HumanoidRootPart.Position).Magnitude
-				if distance <= NPC_ESP_DISTANCE then
-					label.Adornment = npc.HumanoidRootPart
-					label.TextLabel.Text = npcName .. " (" .. math.floor(distance) .. "m)"
-					label.Visible = true
-				else
-					label.Visible = false
-				end
-			end
-		end
-	end
+	playerTracers = {}
 end
 
 local function createPlayerLabelsForExistingPlayers()
 	for _, p in pairs(Players:GetPlayers()) do
-		if p ~= player and not playerLabels[p] then
+		if p ~= player then
 			playerLabels[p] = createPlayerLabel()
 			playerTracers[p] = createPlayerTracer()
 		end
 	end
 end
 
--- NPC Logic (from original script)
-local function findAndLabelNpcs()
-	local npcInstances = {}
-	for _, npc in pairs(Workspace:GetDescendants()) do
-		if npc:IsA("Model") and npc.Name == "Set Home Point" or npc.Name == "Boat Dealer" then
-			local humanoidRootPart = npc:FindFirstChild("HumanoidRootPart")
-			if humanoidRootPart then
-				npcInstances[npc.Name] = npcInstances[npc.Name] or {}
-				table.insert(npcInstances[npc.Name], npc)
-			end
-		end
-	end
-
-	for npcName, instances in pairs(npcInstances) do
-		local label = createNpcLabel()
-		npcLabels[npcName] = label
-		playerNpcs[npcName] = instances[1]
-	end
-end
-
-findAndLabelNpcs()
-
 Players.PlayerAdded:Connect(function(p)
-	if p ~= player then 
-		playerLabels[p] = createPlayerLabel() 
-		playerTracers[p] = createPlayerTracer() 
-	end
+	if p ~= player then playerLabels[p] = createPlayerLabel() playerTracers[p] = createPlayerTracer() end
 end)
 Players.PlayerRemoving:Connect(function(p)
 	local label = playerLabels[p]
@@ -975,7 +968,8 @@ RunService.RenderStepped:Connect(function()
 end)
 
 nukeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
 	removeAllPlayerLabels()
-	mainFrame:Destroy()
+	TracerContainer:Destroy()
 end)
 
