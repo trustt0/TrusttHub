@@ -4,7 +4,8 @@
 	This script is designed to be placed in StarterPlayerScripts.
 	
 	This version includes the full UI, with a two-panel tabbed layout, a corrected
-	minimization feature, and all the functionality you provided.
+	minimization feature, and all the functionality you provided, plus a new
+	Teleport tab.
 ]]
 
 -- SERVICES
@@ -33,12 +34,13 @@ local BOSS_ACCENT = Color3.fromRGB(255, 85, 85) -- Red
 local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
 local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
+local TELEPORT_ACCENT = Color3.fromRGB(85, 170, 255) -- Sky blue
 
 local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
 local TRACER_THICKNESS = 0.2
 local TRACER_TRANSPARENCY = 0.2
-local TWEEN_SPEED = 100
+local TWEEN_SPEED = 100 -- This global variable will be used by all tweening systems
 local ESP_VERTICAL_OFFSET = 20 -- Adjusted vertical offset for ESP labels for better visibility
 
 -- Get the player's PlayerGui to store the UI
@@ -854,6 +856,171 @@ UserInputService.InputChanged:Connect(function(input)
 		updateTweenSpeed(input)
 	end
 end)
+
+
+-- Teleport Tab
+local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
+local isTeleportingActive = false
+
+local teleportStatusLabel = Instance.new("TextLabel")
+teleportStatusLabel.Name = "TeleportStatusLabel"
+teleportStatusLabel.LayoutOrder = 1
+teleportStatusLabel.Size = UDim2.new(1, -20, 0, 50)
+teleportStatusLabel.BackgroundTransparency = 1
+teleportStatusLabel.TextColor3 = FONT_COLOR
+teleportStatusLabel.TextScaled = true
+teleportStatusLabel.Font = TITLE_FONT
+teleportStatusLabel.Text = "Teleporter is off."
+teleportStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+teleportStatusLabel.Parent = teleportContentFrame
+
+local teleportToggle, teleportButton, teleportCheckmark, teleportToggleBox = createToggleButton(teleportContentFrame, "Enable Teleporter", TELEPORT_ACCENT, false, 2)
+teleportToggle.Parent = teleportContentFrame
+
+local teleportToWindmillButton = Instance.new("TextButton")
+teleportToWindmillButton.Name = "TeleportToWindmill"
+teleportToWindmillButton.LayoutOrder = 3
+teleportToWindmillButton.Size = UDim2.new(1, -20, 0, 45)
+teleportToWindmillButton.BackgroundColor3 = FROSTED_BACKGROUND
+teleportToWindmillButton.BackgroundTransparency = 0.4
+teleportToWindmillButton.BorderSizePixel = 0
+teleportToWindmillButton.TextColor3 = FONT_COLOR
+teleportToWindmillButton.TextScaled = true
+teleportToWindmillButton.Font = TITLE_FONT
+teleportToWindmillButton.Text = "Teleport to WindMill"
+teleportToWindmillButton.Parent = teleportContentFrame
+
+local windmillButtonCorner = Instance.new("UICorner")
+windmillButtonCorner.CornerRadius = UDim.new(0, 8)
+windmillButtonCorner.Parent = teleportToWindmillButton
+teleportToWindmillButton.MouseEnter:Connect(function() TweenService:Create(teleportToWindmillButton, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.25)}):Play() end)
+teleportToWindmillButton.MouseLeave:Connect(function() TweenService:Create(teleportToWindmillButton, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
+
+local teleportSpeedFrame = Instance.new("Frame")
+teleportSpeedFrame.Name = "TeleportSpeedFrame"
+teleportSpeedFrame.LayoutOrder = 4
+teleportSpeedFrame.Size = UDim2.new(1, -20, 0, 40)
+teleportSpeedFrame.BackgroundColor3 = FROSTED_BACKGROUND
+teleportSpeedFrame.BackgroundTransparency = 0.4
+teleportSpeedFrame.BorderSizePixel = 0
+teleportSpeedFrame.Parent = teleportContentFrame
+
+local teleportSpeedCorner = Instance.new("UICorner")
+teleportSpeedCorner.CornerRadius = UDim.new(0, 8)
+teleportSpeedCorner.Parent = teleportSpeedFrame
+
+local teleportSpeedLabel = Instance.new("TextLabel")
+teleportSpeedLabel.Name = "SpeedLabel"
+teleportSpeedLabel.Size = UDim2.new(0.5, -5, 1, 0)
+teleportSpeedLabel.Position = UDim2.new(0, 5, 0, 0)
+teleportSpeedLabel.BackgroundTransparency = 1
+teleportSpeedLabel.TextColor3 = FONT_COLOR
+teleportSpeedLabel.Text = "Tween Speed: " .. TWEEN_SPEED
+teleportSpeedLabel.TextScaled = true
+teleportSpeedLabel.Font = BODY_FONT
+teleportSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+teleportSpeedLabel.Parent = teleportSpeedFrame
+
+local teleportSliderFrame = Instance.new("Frame")
+teleportSliderFrame.Name = "SliderFrame"
+teleportSliderFrame.Size = UDim2.new(0.5, -10, 0, 10)
+teleportSliderFrame.Position = UDim2.new(0.5, 5, 0.5, -5)
+teleportSliderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+teleportSliderFrame.BorderSizePixel = 1
+teleportSliderFrame.BorderColor3 = BORDER_COLOR
+teleportSliderFrame.Parent = teleportSpeedFrame
+
+local teleportSliderCorner = Instance.new("UICorner")
+teleportSliderCorner.CornerRadius = UDim.new(0, 5)
+teleportSliderCorner.Parent = teleportSliderFrame
+
+local teleportSliderBar = Instance.new("Frame")
+teleportSliderBar.Name = "SliderBar"
+teleportSliderBar.Size = UDim2.new((TWEEN_SPEED - minSpeed) / (maxSpeed - minSpeed), 0, 1, 0)
+teleportSliderBar.BackgroundColor3 = FRUIT_ACCENT
+teleportSliderBar.BorderSizePixel = 0
+teleportSliderBar.Parent = teleportSliderFrame
+
+-- Teleport slider logic, re-using the same TWEEN_SPEED variable
+local isTeleportSliding = false
+teleportSliderFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isTeleportSliding = true
+		updateTweenSpeed(input)
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isTeleportSliding = false
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if isTeleportSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateTweenSpeed(input)
+		teleportSpeedLabel.Text = "Tween Speed: " .. math.floor(TWEEN_SPEED)
+		-- Update the fruit finder slider as well, since they share the same variable
+		sliderBar.Size = UDim2.new((TWEEN_SPEED - minSpeed) / (maxSpeed - minSpeed), 0, 1, 0)
+		speedLabel.Text = "Tween Speed: " .. math.floor(TWEEN_SPEED)
+	end
+end)
+
+local function findWindmill()
+	local mapFolder = Workspace:FindFirstChild("Map")
+	if mapFolder then
+		local windmill = mapFolder:FindFirstChild("WindMill")
+		if windmill and windmill:IsA("Model") and windmill.PrimaryPart then
+			return windmill.PrimaryPart
+		end
+	end
+	return nil
+end
+
+teleportButton.MouseButton1Click:Connect(function()
+	isTeleportingActive = not isTeleportingActive
+	teleportCheckmark.Visible = isTeleportingActive
+	TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = if isTeleportingActive then TELEPORT_ACCENT else Color3.fromRGB(80, 80, 80)}):Play()
+	
+	if isTeleportingActive then
+		teleportStatusLabel.Text = "Teleporter is on."
+	else
+		teleportStatusLabel.Text = "Teleporter is off."
+	end
+end)
+
+teleportToWindmillButton.MouseButton1Click:Connect(function()
+	if not isTeleportingActive then
+		teleportStatusLabel.Text = "Teleporter must be enabled first."
+		teleportStatusLabel.TextColor3 = BOSS_ACCENT
+		return
+	end
+	
+	local windmillPart = findWindmill()
+	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	
+	if windmillPart and myRootPart then
+		teleportStatusLabel.Text = "Teleporting to WindMill..."
+		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+		
+		local distance = (myRootPart.Position - windmillPart.Position).Magnitude
+		local tweenTime = distance / TWEEN_SPEED
+		
+		local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(windmillPart.Position)})
+		tween:Play()
+		
+		tween.Completed:Wait()
+		
+		teleportStatusLabel.Text = "Successfully teleported to WindMill!"
+		teleportStatusLabel.TextColor3 = FONT_COLOR
+		
+		task.delay(2, function()
+			teleportStatusLabel.Text = "Teleporter is ready."
+		end)
+	else
+		teleportStatusLabel.Text = "WindMill not found."
+		teleportStatusLabel.TextColor3 = BOSS_ACCENT
+	end
+end)
+
 
 -- =================================================================
 -- === Event Handling & Cleanup (Combined from second part) ========
