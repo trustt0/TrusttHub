@@ -897,17 +897,17 @@ dropdownButton.Font = BODY_FONT
 dropdownButton.Text = "Select an Island ▼"
 dropdownButton.Parent = dropdownFrame
 
+-- The dropdown list itself
 local dropdownList = Instance.new("Frame")
 dropdownList.Name = "DropdownList"
-dropdownList.Size = UDim2.new(1, 0, 0, 0)
-dropdownList.Position = UDim2.new(0, 0, 1, 5)
+dropdownList.Size = UDim2.new(0, 0, 0, 0)
 dropdownList.BackgroundColor3 = FROSTED_BACKGROUND
 dropdownList.BackgroundTransparency = 0.2
 dropdownList.BorderSizePixel = 1
 dropdownList.BorderColor3 = BORDER_COLOR
 dropdownList.Visible = false
 dropdownList.ZIndex = 2
-dropdownList.Parent = dropdownFrame
+dropdownList.Parent = screenGui -- Important: Parent to ScreenGui to avoid clipping
 
 local dropdownListLayout = Instance.new("UIListLayout")
 dropdownListLayout.Padding = UDim.new(0, 2)
@@ -948,12 +948,24 @@ end
 dropdownButton.MouseButton1Click:Connect(function()
 	dropdownList.Visible = not dropdownList.Visible
 	if dropdownList.Visible then
-		dropdownList.Size = UDim2.new(1, 0, 0, #islandLocations * 40) -- Set size based on number of options
+		-- Position the dropdown list correctly on every click
+		local buttonAbsolutePosition = dropdownButton.AbsolutePosition
+		local buttonAbsoluteSize = dropdownButton.AbsoluteSize
+		dropdownList.Position = UDim2.new(0, buttonAbsolutePosition.X, 0, buttonAbsolutePosition.Y + buttonAbsoluteSize.Y + 5)
+		dropdownList.Size = UDim2.new(0, buttonAbsoluteSize.X, 0, #islandLocations * 40)
+		
 		for _, item in ipairs(dropdownList:GetChildren()) do
-			if item:IsA("TextButton") then
+			if item:IsA("TextButton") or item:IsA("UIListLayout") then
 				item:Destroy()
 			end
 		end
+		
+		local newLayout = Instance.new("UIListLayout")
+		newLayout.Padding = UDim.new(0, 2)
+		newLayout.FillDirection = Enum.FillDirection.Vertical
+		newLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		newLayout.Parent = dropdownList
+		
 		for name, _ in pairs(islandLocations) do
 			createDropdownItem(name)
 		end
@@ -1294,6 +1306,7 @@ nukeButton.MouseButton1Click:Connect(function()
 	removeAllNpcLabels()
 	removeAllPlayerTracers()
 	if TracerContainer then TracerContainer:Destroy() end
+	if dropdownList and dropdownList.Parent then dropdownList:Destroy() end -- Also clean up the dropdown list
 	if screenGui then screenGui:Destroy() end
 	script:Destroy()
 end)
