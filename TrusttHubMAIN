@@ -1060,7 +1060,6 @@ end
 
 -- Teleport Logic
 local currentTeleportTween = nil
-local cameraConnection = nil
 teleportToggleButton.MouseButton1Click:Connect(function()
 	local isCurrentlyEnabled = teleportCheckmark.Visible
 	local newEnabledState = not isCurrentlyEnabled
@@ -1105,14 +1104,6 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
-
-		-- Camera fix
-		camera.CameraType = Enum.CameraType.Scriptable
-		cameraConnection = RunService.Heartbeat:Connect(function()
-			if myRootPart and camera then
-				camera.CFrame = myRootPart.CFrame
-			end
-		end)
 		
 		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = targetCFrame})
 		
@@ -1125,12 +1116,6 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 				teleportStatusLabel.Text = "Teleport canceled."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
 			end
-			
-			if cameraConnection then
-				cameraConnection:Disconnect()
-				cameraConnection = nil
-			end
-			camera.CameraType = Enum.CameraType.Custom
 			
 			-- The toggle is already turned off when this runs
 			teleportCheckmark.Visible = false
