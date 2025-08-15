@@ -937,6 +937,7 @@ local function createDropdownItem(name: string)
 	corner.Parent = button
 
 	button.MouseButton1Click:Connect(function()
+		print("Dropdown item clicked:", name)
 		selectedIslandName = name
 		dropdownButton.Text = name .. " ▼"
 		dropdownList.Visible = false
@@ -946,6 +947,7 @@ local function createDropdownItem(name: string)
 end
 
 dropdownButton.MouseButton1Click:Connect(function()
+	print("Dropdown button clicked! Current visibility:", dropdownList.Visible)
 	dropdownList.Visible = not dropdownList.Visible
 	if dropdownList.Visible then
 		-- Position the dropdown list correctly on every click
