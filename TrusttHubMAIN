@@ -1058,7 +1058,7 @@ for name, cf in pairs(locations) do
 end
 
 -- Teleport Logic
-local currentTeleportTween = nil
+local teleportConnection = nil
 teleportToggleButton.MouseButton1Click:Connect(function()
 	local isCurrentlyEnabled = teleportCheckmark.Visible
 	local newEnabledState = not isCurrentlyEnabled
@@ -1068,8 +1068,8 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 
 	if newEnabledState then
 		-- START TELEPORT
-		if currentTeleportTween then
-			currentTeleportTween:Cancel()
+		if teleportConnection then
+			teleportConnection:Disconnect()
 		end
 
 		local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1098,52 +1098,67 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			return
 		end
 		
-		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
-		local tweenTime = distance / currentTeleportSpeed
-		
-		-- NEW: Set Humanoid properties to prevent bouncing
+		-- NEW: Store original properties and anchor the part to stop shaking
 		local humanoid = myRootPart.Parent:FindFirstChildOfClass("Humanoid")
-		local oldWalkSpeed, oldJumpPower
+		local oldWalkSpeed, oldJumpPower, oldAnchored
 		if humanoid then
 			oldWalkSpeed = humanoid.WalkSpeed
 			oldJumpPower = humanoid.JumpPower
+			oldAnchored = myRootPart.Anchored
 			humanoid.WalkSpeed = 0
 			humanoid.JumpPower = 0
+			myRootPart.Anchored = true
 		end
 
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 		
-		-- NEW: Changed easing style to Linear for constant speed
-		local teleportTweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-		currentTeleportTween = TweenService:Create(myRootPart, teleportTweenInfo, {CFrame = targetCFrame})
-		
-		currentTeleportTween.Completed:Connect(function(state)
-			currentTeleportTween = nil
-			-- NEW: Restore Humanoid properties after tween
-			if humanoid then
-				humanoid.WalkSpeed = oldWalkSpeed
-				humanoid.JumpPower = oldJumpPower
-			end
-
-			if state == Enum.TweenStatus.Completed then
+		-- NEW: Loop-based movement for dynamic speed
+		teleportConnection = RunService.Heartbeat:Connect(function(deltaTime)
+			local currentDistance = (myRootPart.Position - targetCFrame.Position).Magnitude
+			
+			-- Stop the loop when very close to prevent overshooting
+			if currentDistance <= 2 then
+				myRootPart.CFrame = targetCFrame
+				teleportConnection:Disconnect()
+				teleportConnection = nil
 				teleportStatusLabel.Text = "Successfully teleported to " .. selectedLocation .. "."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
-			elseif state == Enum.TweenStatus.Canceled then
-				teleportStatusLabel.Text = "Teleport canceled."
-				teleportStatusLabel.TextColor3 = FONT_COLOR
+				teleportCheckmark.Visible = false
+				TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+				-- NEW: Restore properties
+				if humanoid then
+					humanoid.WalkSpeed = oldWalkSpeed
+					humanoid.JumpPower = oldJumpPower
+					myRootPart.Anchored = oldAnchored
+				end
+				return
 			end
-			-- The toggle is already turned off when this runs
-			teleportCheckmark.Visible = false
-			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+
+			-- Check for speed increase
+			local currentSpeed = currentTeleportSpeed
+			if currentDistance <= 20 then
+				currentSpeed = currentSpeed + 20
+			end
+			
+			local moveDirection = (targetCFrame.Position - myRootPart.Position).Unit
+			myRootPart.CFrame = CFrame.new(myRootPart.Position + moveDirection * currentSpeed * deltaTime)
 		end)
-		
-		currentTeleportTween:Play()
 	else
 		-- CANCEL TELEPORT
-		if currentTeleportTween then
-			currentTeleportTween:Cancel()
-			currentTeleportTween = nil
+		if teleportConnection then
+			teleportConnection:Disconnect()
+			teleportConnection = nil
+			local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local humanoid = myRootPart and myRootPart.Parent:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				-- We can't know the original values, so we restore to defaults.
+				humanoid.WalkSpeed = 16
+				humanoid.JumpPower = 50
+				myRootPart.Anchored = false
+			end
+			teleportStatusLabel.Text = "Teleport canceled."
+			teleportStatusLabel.TextColor3 = FONT_COLOR
 		end
 	end
 end)
