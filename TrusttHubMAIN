@@ -855,7 +855,8 @@ local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
 
 local isTeleportEnabled = false
 local currentTeleportTween = nil
-local teleportModelName = "Windmill"
+local selectedTargetModel = nil
+
 local teleportStatusLabel = Instance.new("TextLabel")
 teleportStatusLabel.Name = "TeleportStatusLabel"
 teleportStatusLabel.LayoutOrder = 1
@@ -864,7 +865,7 @@ teleportStatusLabel.BackgroundTransparency = 1
 teleportStatusLabel.TextColor3 = FONT_COLOR
 teleportStatusLabel.TextScaled = true
 teleportStatusLabel.Font = TITLE_FONT
-teleportStatusLabel.Text = "Teleporting is off."
+teleportStatusLabel.Text = "Select a target."
 teleportStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 teleportStatusLabel.Parent = teleportContentFrame
 
@@ -889,7 +890,7 @@ teleportButton.Name = "TeleportButton"
 teleportButton.LayoutOrder = 3
 teleportButton.Size = UDim2.new(1, -20, 0, 50)
 teleportButton.BackgroundColor3 = TELEPORT_ACCENT
-teleportButton.Text = "Teleport to Windmill"
+teleportButton.Text = "Teleport"
 teleportButton.TextColor3 = FONT_COLOR
 teleportButton.TextScaled = true
 teleportButton.Font = TITLE_FONT
@@ -976,6 +977,107 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
+local function createModelButton(parent: Instance, modelName: string)
+	local button = Instance.new("TextButton")
+	button.Name = modelName .. "Button"
+	button.Size = UDim2.new(1, -10, 0, 40)
+	button.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1, 1, 1), 0.1)
+	button.BackgroundTransparency = 0.5
+	button.BorderSizePixel = 0
+	button.TextColor3 = FONT_COLOR
+	button.Text = modelName
+	button.TextScaled = true
+	button.Font = BODY_FONT
+	button.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = button
+
+	button.MouseEnter:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), { BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1, 1, 1), 0.25) }):Play() end)
+	button.MouseLeave:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), { BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1, 1, 1), 0.1) }):Play() end)
+
+	return button
+end
+
+local modelListFrame = Instance.new("Frame")
+modelListFrame.Name = "ModelListFrame"
+modelListFrame.LayoutOrder = 5
+modelListFrame.Size = UDim2.new(1, 0, 0.7, -40)
+modelListFrame.BackgroundColor3 = FROSTED_BACKGROUND
+modelListFrame.BackgroundTransparency = 0.5
+modelListFrame.BorderSizePixel = 0
+modelListFrame.ClipsDescendants = true
+modelListFrame.Parent = teleportContentFrame
+
+local modelListLayout = Instance.new("UIListLayout")
+modelListLayout.Padding = UDim.new(0, 5)
+modelListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+modelListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+modelListLayout.Parent = modelListFrame
+
+local modelListPadding = Instance.new("UIPadding")
+modelListPadding.PaddingTop = UDim.new(0, 5)
+modelListPadding.PaddingBottom = UDim.new(0, 5)
+modelListPadding.PaddingLeft = UDim.new(0, 5)
+modelListPadding.PaddingRight = UDim.new(0, 5)
+modelListPadding.Parent = modelListFrame
+
+local modelListScroll = Instance.new("ScrollingFrame")
+modelListScroll.Name = "ModelListScroll"
+modelListScroll.Size = UDim2.new(1, 0, 1, 0)
+modelListScroll.CanvasSize = UDim2.new(0, 0, 0, 0) -- Adjusted dynamically
+modelListScroll.BackgroundTransparency = 1
+modelListScroll.BorderSizePixel = 0
+modelListScroll.Parent = modelListFrame
+
+local modelListItems = Instance.new("UIListLayout")
+modelListItems.Padding = UDim.new(0, 10)
+modelListItems.HorizontalAlignment = Enum.HorizontalAlignment.Center
+modelListItems.SortOrder = Enum.SortOrder.LayoutOrder
+modelListItems.Parent = modelListScroll
+
+local modelListPaddingScroll = Instance.new("UIPadding")
+modelListPaddingScroll.PaddingTop = UDim.new(0, 5)
+modelListPaddingScroll.PaddingBottom = UDim.new(0, 5)
+modelListPaddingScroll.PaddingLeft = UDim.new(0, 5)
+modelListPaddingScroll.PaddingRight = UDim.new(0, 5)
+modelListPaddingScroll.Parent = modelListScroll
+
+local function updateModelList()
+	local mapFolder = Workspace:FindFirstChild("Map")
+	if not mapFolder then
+		teleportStatusLabel.Text = "Map folder not found in Workspace."
+		teleportStatusLabel.TextColor3 = BOSS_ACCENT
+		return
+	end
+	
+	-- Clear old buttons
+	for _, child in pairs(modelListScroll:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	local modelCount = 0
+	for _, child in pairs(mapFolder:GetChildren()) do
+		if child:IsA("Model") and child.PrimaryPart then
+			modelCount += 1
+			local modelButton = createModelButton(modelListScroll, child.Name)
+			modelButton.MouseButton1Click:Connect(function()
+				selectedTargetModel = child
+				teleportStatusLabel.Text = "Selected: " .. child.Name
+				teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+			end)
+		end
+	end
+	
+	-- Adjust CanvasSize
+	modelListItems:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		modelListScroll.CanvasSize = UDim2.new(0, 0, 0, modelListItems.AbsoluteContentSize.Y)
+	end)
+end
+
 teleportButton.MouseButton1Click:Connect(function()
 	if currentTeleportTween then
 		currentTeleportTween:Cancel()
@@ -988,9 +1090,8 @@ teleportButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	local windmillModel = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild(teleportModelName)
-	if not windmillModel or not windmillModel:IsA("Model") then
-		teleportStatusLabel.Text = teleportModelName .. " model not found!"
+	if not selectedTargetModel then
+		teleportStatusLabel.Text = "Please select a target model first."
 		teleportStatusLabel.TextColor3 = BOSS_ACCENT
 		return
 	end
@@ -1002,9 +1103,9 @@ teleportButton.MouseButton1Click:Connect(function()
 		return
 	end
 	
-	local targetCFrame = windmillModel:GetBoundingBox().CFrame
+	local targetCFrame = selectedTargetModel:GetBoundingBox().CFrame
 	if not targetCFrame then
-		teleportStatusLabel.Text = "Windmill model has no parts to teleport to!"
+		teleportStatusLabel.Text = selectedTargetModel.Name .. " has no parts to teleport to!"
 		teleportStatusLabel.TextColor3 = BOSS_ACCENT
 		return
 	end
@@ -1012,7 +1113,7 @@ teleportButton.MouseButton1Click:Connect(function()
 	local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
 	local tweenTime = distance / currentTeleportSpeed
 
-	teleportStatusLabel.Text = "Teleporting to Windmill..."
+	teleportStatusLabel.Text = "Teleporting to " .. selectedTargetModel.Name .. "..."
 	teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 	teleportButton.Text = "Cancel Teleport"
 	
@@ -1020,18 +1121,20 @@ teleportButton.MouseButton1Click:Connect(function()
 	
 	currentTeleportTween.Completed:Connect(function(state)
 		if state == Enum.TweenStatus.Completed then
-			teleportStatusLabel.Text = "Successfully teleported to Windmill."
+			teleportStatusLabel.Text = "Successfully teleported to " .. selectedTargetModel.Name .. "."
 			teleportStatusLabel.TextColor3 = FONT_COLOR
 		elseif state == Enum.TweenStatus.Canceled then
 			teleportStatusLabel.Text = "Teleport canceled."
 			teleportStatusLabel.TextColor3 = FONT_COLOR
 		end
-		teleportButton.Text = "Teleport to Windmill"
+		teleportButton.Text = "Teleport"
 		currentTeleportTween = nil
 	end)
 
 	currentTeleportTween:Play()
 end)
+
+updateModelList()
 
 
 -- =================================================================
