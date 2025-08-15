@@ -1114,10 +1114,10 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		camera.CameraType = Enum.CameraType.Scriptable
 		
 		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
-		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = cameraTargetCFrame})
+		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = cameraTargetCFrame})
 		currentCameraTween:Play()
 		
-		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
