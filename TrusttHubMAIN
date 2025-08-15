@@ -57,8 +57,9 @@ screenGui.Name = "UnifiedMenu"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = PlayerGui
 
+-- This is the single note for this version. The text and color will change in the next one.
 local noteText = "Updated with Camera Fixes"
-local noteColor = Color3.fromRGB(85, 255, 255) -- A consistent color for this version
+local noteColor = Color3.fromRGB(85, 255, 255)
 
 ---
 ## UI Utility Functions
@@ -302,7 +303,7 @@ setupDrag(mainFrame, titleBar)
 -- Add the single note to the title bar
 local noteLabel = Instance.new("TextLabel")
 noteLabel.Name = "NoteLabel"
-noteLabel.Size = UDim2.new(0.5, 0, 1, 0) -- Adjusted size
+noteLabel.Size = UDim2.new(0, 200, 1, 0) -- Adjusted size
 noteLabel.Position = UDim2.new(0.5, -100, 0, 0) -- Adjusted position
 noteLabel.BackgroundTransparency = 1
 noteLabel.TextColor3 = noteColor
@@ -391,37 +392,53 @@ local tabButtons = {}
 local activeTabName = nil
 
 local function createTabAndContent(name: string, accentColor: Color3, layoutOrder: number)
-	local button = Instance.new("TextButton")
-	button.Name = name .. "Tab"
-	button.LayoutOrder = layoutOrder
-	button.Size = UDim2.new(1, -10, 0, 50)
-	button.BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)
-	button.BackgroundTransparency = 0.5
-	button.BorderSizePixel = 0
-	button.TextColor3 = FONT_COLOR
-	button.Text = name
-	button.TextScaled = true
-	button.Font = TITLE_FONT
-	button.Parent = parent
+	local tabButton = createTabButton(tabContainer, name, accentColor, layoutOrder)
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Name = name .. "Content"
+	contentFrame.Size = UDim2.new(1, 0, 1, 0)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.Parent = tabContentParent
+	contentFrame.Visible = false
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = button
+	tabButtons[name] = tabButton
+	contentFrames[name] = contentFrame
 
-	-- Hover effects
-	button.MouseEnter:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.25)}):Play() end)
-	button.MouseLeave:Connect(function() TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
-	
-	return button
+	tabButton.MouseButton1Click:Connect(function()
+		if activeTabName then
+			-- Deactivate current tab
+			local currentButton = tabButtons[activeTabName]
+			local currentFrame = contentFrames[activeTabName]
+			TweenService:Create(currentButton, tweenInfo, {BackgroundColor3 = FROSTED_BACKGROUND:Lerp(Color3.new(1,1,1), 0.1), TextColor3 = FONT_COLOR}):Play()
+			currentFrame.Visible = false
+		end
+		
+		-- Activate new tab
+		activeTabName = name
+		TweenService:Create(tabButton, tweenInfo, {BackgroundColor3 = accentColor, TextColor3 = FONT_COLOR}):Play()
+		contentFrame.Visible = true
+	end)
+
+	return contentFrame
 end
 
+-- Create the tabs and their content frames
+local bossContentFrame = createTabAndContent("Boss Status", BOSS_ACCENT, 1)
+local espContentFrame = createTabAndContent("ESP", ESP_ACCENT, 2)
+local farmLevelContentFrame = createTabAndContent("Farm Level", FARM_ACCENT, 3)
+local fruitFinderContentFrame = createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4)
+local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
+
+-- Set the default active tab
+activeTabName = "Boss Status"
+contentFrames[activeTabName].Visible = true
+tabButtons[activeTabName].BackgroundColor3 = BOSS_ACCENT
+tabButtons[activeTabName].TextColor3 = FONT_COLOR
+
+---
+## Tab-Specific UI Elements and Logic
+---
 
 -- Boss Status Tab
-local bossContentFrame = createTabAndContent("Boss Status", BOSS_ACCENT, 1)
-bossContentFrame.Visible = true
-activeTabName = "Boss Status"
-TweenService:Create(tabButtons["Boss Status"], tweenInfo, {BackgroundColor3 = BOSS_ACCENT, TextColor3 = FONT_COLOR}):Play()
-
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
 statusLabel.LayoutOrder = 1
@@ -455,7 +472,6 @@ task.spawn(function()
 end)
 
 -- ESP Tab
-local espContentFrame = createTabAndContent("ESP", ESP_ACCENT, 2)
 local playerEspLabel = Instance.new("TextLabel")
 playerEspLabel.Name = "PlayerEspLabel"
 playerEspLabel.LayoutOrder = 1
@@ -518,7 +534,6 @@ end
 for npcName, _ in pairs(npcTypes) do createNpcEspCheckbox(npcName) end
 
 -- Farm Level Tab
-local farmLevelContentFrame = createTabAndContent("Farm Level", FARM_ACCENT, 3)
 local farmLevelToggle, farmLevelButton, farmLevelCheckmark, farmLevelToggleBox = createToggleButton(farmLevelContentFrame, "Farm Level", FARM_ACCENT, false, 1)
 local isFarmLevelActive = false
 local levelStatusFrame = Instance.new("Frame")
@@ -578,7 +593,6 @@ task.spawn(function()
 end)
 
 -- Fruit Finder Tab
-local fruitFinderContentFrame = createTabAndContent("Fruit Finder", FRUIT_ACCENT, 4)
 local fruitFinderToggle, fruitFinderButton, fruitFinderCheckmark, fruitFinderToggleBox = createToggleButton(fruitFinderContentFrame, "Enable Fruit Finder", FRUIT_ACCENT, false, 1)
 local isFruitFinderActive = false
 local isTeleporting = false
@@ -863,9 +877,6 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 -- Teleport Tab
-local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
-
--- HARDCODED TELEPORT LOCATIONS
 local locations = {
 	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95),
 	["Spawn"] = CFrame.new(-380.00, 10.00, -290.00),
