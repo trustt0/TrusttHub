@@ -1098,16 +1098,13 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			return
 		end
 		
-		-- Instantly move the character to the destination
-		myRootPart.CFrame = targetCFrame
-		
-		-- Then, tween the camera to the destination
-		local tweenTime = (Workspace.CurrentCamera.CFrame.Position - targetCFrame.Position).Magnitude / currentTeleportSpeed
-		
+		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
+		local tweenTime = distance / currentTeleportSpeed
+
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 		
-		currentTeleportTween = TweenService:Create(Workspace.CurrentCamera, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
