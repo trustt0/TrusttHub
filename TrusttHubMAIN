@@ -1105,7 +1105,7 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
 		
-		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
