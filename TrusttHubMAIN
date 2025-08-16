@@ -295,7 +295,7 @@ end)
 
 -- Create the main UI elements
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
-local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "hi")
+local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced")
 setupDrag(mainFrame, titleBar)
 
 local contentFrame = Instance.new("Frame")
