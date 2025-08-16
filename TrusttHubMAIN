@@ -853,6 +853,7 @@ local locations = {
 	["Desert"] = CFrame.new(974.71, 6.47, 4141.80),
 	["Frozen Village/Ice"] = CFrame.new(1217.41, 27.01, -1220.15),
 	["MiddleTown/Town"] = CFrame.new(-655.82, 7.89, 1436.68),
+	["Pirate Village"] = CFrame.new(-1219.90, 4.79, 3829.62),
 }
 local selectedLocation = nil
 
@@ -1332,65 +1333,4 @@ end
 Players.PlayerAdded:Connect(function(p)
 	if p ~= player then
 		playerLabels[p] = createPlayerLabel()
-		playerTracers[p] = createPlayerTracer()
-	end
-end)
-Players.PlayerRemoving:Connect(function(p)
-	local label = playerLabels[p]
-	if label then label:Destroy() playerLabels[p] = nil end
-	local tracer = playerTracers[p]
-	if tracer then tracer:Destroy() playerTracers[p] = nil end
-end)
-
-local renderSteppedConnection = RunService.RenderStepped:Connect(function()
-	local myRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not myRootPart then return end
-	local hasPlayerLabels = playerCheckboxState["Username ESP"] or playerCheckboxState["Distance ESP"]
-	local hasTracing = playerCheckboxState["Player Tracing"]
-	
-	if hasPlayerLabels then
-		updatePlayerLabels()
-	else
-		for _, label in pairs(playerLabels) do
-			label.Visible = false
-		end
-	end
-	
-	if hasTracing then
-		updatePlayerTracers()
-	else
-		for _, tracer in pairs(playerTracers) do
-			tracer.Transparency = 1
-		end
-	end
-	
-	local hasNpcLabels = activeTabName == "ESP" and (npcCheckboxState["Set Home Point"] or npcCheckboxState["Boat Dealer"])
-	if hasNpcLabels then
-		updateNpcLabels()
-	else
-		for _, label in pairs(npcLabels) do
-			label.Visible = false
-		end
-	end
-end)
-
-local function cleanup()
-	-- Clean up all UI and objects
-	if renderSteppedConnection then
-		renderSteppedConnection:Disconnect()
-		renderSteppedConnection = nil
-	end
-	for _, label in pairs(playerLabels) do if label and label.Parent then label:Destroy() end end
-	for _, label in pairs(npcLabels) do if label and label.Parent then label:Destroy() end end
-	for _, tracer in pairs(playerTracers) do if tracer and tracer.Parent then tracer:Destroy() end end
-	if tracerContainer then tracerContainer:Destroy() end
-	if screenGui then screenGui:Destroy() end
-	if currentTeleportTween then currentTeleportTween:Cancel() end
-	if currentCameraTween then currentCameraTween:Cancel() end
-	if camera.CameraType == Enum.CameraType.Scriptable then
-		camera.CameraType = Enum.CameraType.Custom
-	end
-	script:Destroy()
-end
-
-nukeButton.MouseButton1Click:Connect(cleanup)
+		playerT
