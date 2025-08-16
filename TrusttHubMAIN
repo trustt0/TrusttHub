@@ -851,7 +851,8 @@ local locations = {
 	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95),
 	["Jungle"] = CFrame.new(-1254.84, 11.89, 349.05),
 	["Desert"] = CFrame.new(974.71, 6.47, 4141.80),
-	["Frozen Village/Ice"] = CFrame.new(1217.41, 27.01, -1220.15), -- The new location for Frozen Village/Ice
+	["Frozen Village/Ice"] = CFrame.new(1217.41, 27.01, -1220.15),
+	["MiddleTown/Town"] = CFrame.new(-655.82, 7.89, 1436.68),
 }
 local selectedLocation = nil
 
