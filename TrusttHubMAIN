@@ -16,9 +16,9 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 -- CONFIGURATION
-local UI_SIZE = UDim2.new(0, 650, 0, 550) -- Adjusted UI size for better aesthetics
-local MINIMIZED_HEIGHT = 50 -- Height of the title bar
-local TAB_WIDTH = 160
+local UI_SIZE = UDim2.new(0, 600, 0, 500) -- Increased UI size for better aesthetics
+local MINIMIZED_HEIGHT = 45 -- Height of the title bar
+local TAB_WIDTH = 150
 local TITLE_FONT = Enum.Font.SourceSansBold
 local BODY_FONT = Enum.Font.SourceSans
 local FONT_COLOR = Color3.fromRGB(220, 220, 220)
@@ -33,7 +33,6 @@ local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
 local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
 local TELEPORT_ACCENT = Color3.fromRGB(85, 170, 255) -- Blue for teleport
-local CORDS_ACCENT = Color3.fromRGB(130, 255, 85) -- Light green for Cords Getter
 
 local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
@@ -295,7 +294,7 @@ end)
 
 -- Create the main UI elements
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
-local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Hello") -- Changed the title here
+local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced Menu")
 setupDrag(mainFrame, titleBar)
 
 local contentFrame = Instance.new("Frame")
@@ -676,7 +675,7 @@ local function enableFruitFinder()
 					fruitStatusLabel.Text = "Fruit found! Smooth tweening to location."
 					fruitStatusLabel.TextColor3 = FRUIT_ACCENT
 					
-					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {Cframe = CFrame.new(nearestFruitPart.Position)})
+					local tween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(nearestFruitPart.Position)})
 					tween:Play()
 					
 					tween.Completed:Wait()
@@ -849,11 +848,8 @@ local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
 -- HARDCODED TELEPORT LOCATIONS
 local locations = {
 	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95),
-	["Jungle"] = CFrame.new(-1254.84, 11.89, 349.05),
-	["Desert"] = CFrame.new(974.71, 6.47, 4141.80),
-	["Frozen Village/Ice"] = CFrame.new(1217.41, 27.01, -1220.15),
-	["MiddleTown/Town"] = CFrame.new(-655.82, 7.89, 1436.68),
-	["Pirate Village"] = CFrame.new(-1219.90, 4.79, 3829.62),
+	["Spawn"] = CFrame.new(-380.00, 10.00, -290.00),
+	["Main Island"] = CFrame.new(0.00, 10.00, 0.00)
 }
 local selectedLocation = nil
 
@@ -1094,14 +1090,19 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			return
 		end
 		
-		-- Use a constant tween time based on the desired speed
 		local distance = (myRootPart.Position - targetCFrame.Position).Magnitude
 		local tweenTime = distance / TELEPORT_TWEEN_SPEED
 
 		teleportStatusLabel.Text = "Teleporting to " .. selectedLocation .. "..."
 		teleportStatusLabel.TextColor3 = TELEPORT_ACCENT
+
+		-- CINEMATIC CAMERA TWEEN
+		local cameraTargetCFrame = CFrame.lookAt(targetCFrame.Position + Vector3.new(5, 5, 5), targetCFrame.Position)
+		camera.CameraType = Enum.CameraType.Scriptable
+		currentCameraTween = TweenService:Create(camera, TweenInfo.new(tweenTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {CFrame = cameraTargetCFrame})
+		currentCameraTween:Play()
 		
-		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+		currentTeleportTween = TweenService:Create(myRootPart, TweenInfo.new(tweenTime), {CFrame = targetCFrame})
 		
 		currentTeleportTween.Completed:Connect(function(state)
 			currentTeleportTween = nil
@@ -1112,6 +1113,10 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 				teleportStatusLabel.Text = "Teleport canceled."
 				teleportStatusLabel.TextColor3 = FONT_COLOR
 			end
+			-- Restore camera control
+			camera.CameraType = Enum.CameraType.Custom
+			currentCameraTween = nil
+
 			-- The toggle is already turned off when this runs
 			teleportCheckmark.Visible = false
 			TweenService:Create(teleportToggleBox, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
@@ -1124,53 +1129,12 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			currentTeleportTween:Cancel()
 			currentTeleportTween = nil
 		end
+		if currentCameraTween then
+			currentCameraTween:Cancel()
+			currentCameraTween = nil
+			camera.CameraType = Enum.CameraType.Custom
+		end
 	end
-end)
-
--- Cords Getter Tab
-local cordsGetterContentFrame = createTabAndContent("Cords Getter", CORDS_ACCENT, 6)
-local getCordsButtonContainer, getCordsButton = createToggleButton(cordsGetterContentFrame, "Get My Coordinates", CORDS_ACCENT, false, 1)
-
--- Textbox to display coordinates
-local cordsTextBox = Instance.new("TextBox")
-cordsTextBox.Name = "CordsTextBox"
-cordsTextBox.LayoutOrder = 2
-cordsTextBox.Size = UDim2.new(1, -20, 0, 40)
-cordsTextBox.BackgroundColor3 = FROSTED_BACKGROUND
-cordsTextBox.BackgroundTransparency = 0.5
-cordsTextBox.BorderSizePixel = 1
-cordsTextBox.BorderColor3 = BORDER_COLOR
-cordsTextBox.Text = "Your coordinates will appear here."
-cordsTextBox.TextColor3 = FONT_COLOR
-cordsTextBox.TextScaled = true
-cordsTextBox.Font = BODY_FONT
-cordsTextBox.TextXAlignment = Enum.TextXAlignment.Left
-cordsTextBox.TextYAlignment = Enum.TextYAlignment.Center
-cordsTextBox.ClearTextOnFocus = false
-cordsTextBox.Parent = cordsGetterContentFrame
-
-local cordsCorner = Instance.new("UICorner")
-cordsCorner.CornerRadius = UDim.new(0, 8)
-cordsCorner.Parent = cordsTextBox
-
--- Event handler for the button
-getCordsButton.MouseButton1Click:Connect(function()
-	local myCharacter = player.Character
-	if not myCharacter then
-		cordsTextBox.Text = "Error: Character not found!"
-		return
-	end
-	
-	local rootPart = myCharacter:FindFirstChild("HumanoidRootPart")
-	if not rootPart then
-		cordsTextBox.Text = "Error: HumanoidRootPart not found!"
-		return
-	end
-	
-	local pos = rootPart.Position
-	local formattedCords = string.format("Vector3.new(%.2f, %.2f, %.2f)", pos.X, pos.Y, pos.Z)
-	
-	cordsTextBox.Text = formattedCords
 end)
 
 -- =================================================================
@@ -1282,7 +1246,7 @@ local function updatePlayerTracers()
 				local middle = startPos:Lerp(endPos, 0.5)
 				local tracerCFrame = CFrame.new(middle, endPos)
 				tracerCFrame = tracerCFrame * CFrame.Angles(math.pi / 2, 0, 0)
-				tracer.CFrame = tracerCframe
+				tracer.CFrame = tracerCFrame
 				local mesh = tracer:FindFirstChildOfClass("CylinderMesh")
 				if mesh then mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS) end
 				tracer.Transparency = TRACER_TRANSPARENCY
