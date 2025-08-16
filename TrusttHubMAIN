@@ -33,6 +33,7 @@ local ESP_ACCENT = Color3.fromRGB(85, 255, 85) -- Green
 local FARM_ACCENT = Color3.fromRGB(85, 255, 255) -- Cyan
 local FRUIT_ACCENT = Color3.fromRGB(255, 170, 0) -- Orange
 local TELEPORT_ACCENT = Color3.fromRGB(85, 170, 255) -- Blue for teleport
+local CORDS_ACCENT = Color3.fromRGB(130, 255, 85) -- Light green for Cords Getter
 
 local NPC_ESP_DISTANCE = 500
 local TRACER_COLOR = Color3.fromRGB(255, 170, 0)
@@ -1119,6 +1120,52 @@ teleportToggleButton.MouseButton1Click:Connect(function()
 			currentTeleportTween = nil
 		end
 	end
+end)
+
+-- Cords Getter Tab
+local cordsGetterContentFrame = createTabAndContent("Cords Getter", CORDS_ACCENT, 6)
+local getCordsButtonContainer, getCordsButton = createToggleButton(cordsGetterContentFrame, "Get My Coordinates", CORDS_ACCENT, false, 1)
+
+-- Textbox to display coordinates
+local cordsTextBox = Instance.new("TextBox")
+cordsTextBox.Name = "CordsTextBox"
+cordsTextBox.LayoutOrder = 2
+cordsTextBox.Size = UDim2.new(1, -20, 0, 40)
+cordsTextBox.BackgroundColor3 = FROSTED_BACKGROUND
+cordsTextBox.BackgroundTransparency = 0.5
+cordsTextBox.BorderSizePixel = 1
+cordsTextBox.BorderColor3 = BORDER_COLOR
+cordsTextBox.Text = "Your coordinates will appear here."
+cordsTextBox.TextColor3 = FONT_COLOR
+cordsTextBox.TextScaled = true
+cordsTextBox.Font = BODY_FONT
+cordsTextBox.TextXAlignment = Enum.TextXAlignment.Left
+cordsTextBox.TextYAlignment = Enum.TextYAlignment.Center
+cordsTextBox.ClearTextOnFocus = false
+cordsTextBox.Parent = cordsGetterContentFrame
+
+local cordsCorner = Instance.new("UICorner")
+cordsCorner.CornerRadius = UDim.new(0, 8)
+cordsCorner.Parent = cordsTextBox
+
+-- Event handler for the button
+getCordsButton.MouseButton1Click:Connect(function()
+	local myCharacter = player.Character
+	if not myCharacter then
+		cordsTextBox.Text = "Error: Character not found!"
+		return
+	end
+	
+	local rootPart = myCharacter:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		cordsTextBox.Text = "Error: HumanoidRootPart not found!"
+		return
+	end
+	
+	local pos = rootPart.Position
+	local formattedCords = string.format("Vector3.new(%.2f, %.2f, %.2f)", pos.X, pos.Y, pos.Z)
+	
+	cordsTextBox.Text = formattedCords
 end)
 
 -- =================================================================
