@@ -848,7 +848,8 @@ local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
 
 -- HARDCODED TELEPORT LOCATIONS
 local locations = {
-	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95)
+	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95),
+	["Jungle"] = CFrame.new(-1254.84, 11.89, 349.05)
 }
 local selectedLocation = nil
 
