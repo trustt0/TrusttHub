@@ -1282,7 +1282,7 @@ local function updatePlayerTracers()
 				local middle = startPos:Lerp(endPos, 0.5)
 				local tracerCFrame = CFrame.new(middle, endPos)
 				tracerCFrame = tracerCFrame * CFrame.Angles(math.pi / 2, 0, 0)
-				tracer.CFrame = tracerCframe
+				tracer.CFrame = tracerCFrame
 				local mesh = tracer:FindFirstChildOfClass("CylinderMesh")
 				if mesh then mesh.Scale = Vector3.new(TRACER_THICKNESS, distance, TRACER_THICKNESS) end
 				tracer.Transparency = TRACER_TRANSPARENCY
