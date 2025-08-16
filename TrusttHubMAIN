@@ -294,7 +294,7 @@ end)
 
 -- Create the main UI elements
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
-local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced Menu")
+local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "hi")
 setupDrag(mainFrame, titleBar)
 
 local contentFrame = Instance.new("Frame")
@@ -847,9 +847,7 @@ local teleportContentFrame = createTabAndContent("Teleport", TELEPORT_ACCENT, 5)
 
 -- HARDCODED TELEPORT LOCATIONS
 local locations = {
-	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95),
-	["Spawn"] = CFrame.new(-380.00, 10.00, -290.00),
-	["Main Island"] = CFrame.new(0.00, 10.00, 0.00)
+	["Windmill"] = CFrame.new(1127.06, 16.55, 1337.44, -0.95, -0.00, 0.30, -0.00, 1.00, 0.00, -0.30, 0.00, -0.95)
 }
 local selectedLocation = nil
 
