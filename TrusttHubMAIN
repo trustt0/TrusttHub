@@ -16,9 +16,9 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 -- CONFIGURATION
-local UI_SIZE = UDim2.new(0, 600, 0, 500) -- Increased UI size for better aesthetics
-local MINIMIZED_HEIGHT = 45 -- Height of the title bar
-local TAB_WIDTH = 150
+local UI_SIZE = UDim2.new(0, 650, 0, 550) -- Adjusted UI size for better aesthetics
+local MINIMIZED_HEIGHT = 50 -- Height of the title bar
+local TAB_WIDTH = 160
 local TITLE_FONT = Enum.Font.SourceSansBold
 local BODY_FONT = Enum.Font.SourceSans
 local FONT_COLOR = Color3.fromRGB(220, 220, 220)
@@ -295,7 +295,7 @@ end)
 
 -- Create the main UI elements
 local mainFrame = createMainFrame(UI_SIZE, UDim2.new(0.5, 0, 0.5, 0), screenGui)
-local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Enhanced")
+local titleBar, minimizeButton, nukeButton = createTitleBar(mainFrame, "Hello") -- Changed the title here
 setupDrag(mainFrame, titleBar)
 
 local contentFrame = Instance.new("Frame")
